@@ -7,7 +7,7 @@ module Comandos where
 
 	-- Definir Data Comando = ...
 	data Comando = 	CExitIncond | CExit | CInsertCurr | CWrite | CWriteArg Arg | CPrintCurr | Int |
-									CPrint Direc | CInsert Direc
+									CPrint Direc | CInsert Direc | CAppend Direc
 		deriving (Eq, Show)
 
 	data ConsoleState 	= ModoComando | ModoInsertar deriving (Eq, Ord, Show)
@@ -38,6 +38,8 @@ module Comandos where
 	comando = comando_salir `alt` comando_salir_incondicional `alt` comando_insertar_linea_actual 
 						`alt` comando_escribir `alt` comando_escribir_con_argumento `alt` comando_imprimir_actual 
 						`alt` comando_imprimir_con_direccion `alt` comando_insertar_con_direccion						
+						`alt` comando_append_con_direccion
+
 
 	-- *** *** *** *** *** *** --
 	-- Funciones aplicadas a un unico tipo de comandos
@@ -67,7 +69,8 @@ module Comandos where
 	comando_insertar_con_direccion :: Parse Char Comando
 	comando_insertar_con_direccion = (directions_parser >*> (action_parser_cond 'i')) `build` \(dir, _) -> CInsert dir
 
-
+	comando_append_con_direccion :: Parse Char Comando
+	comando_append_con_direccion = (directions_parser >*> (action_parser_cond 'a')) `build` \(dir, _) -> CAppend dir
 
 
 	-- *** *** *** *** *** *** --
@@ -95,8 +98,8 @@ module Comandos where
 	ejecutar_comando_modo_comando (Just (CWriteArg arg)) st 	= ejecutar_comando_write_con_ruta (Just (CWriteArg arg)) st
 	ejecutar_comando_modo_comando (Just (CPrint direc)) st 		= ejecutar_comando_print_con_dir (Just (CPrint direc)) st
 	ejecutar_comando_modo_comando (Just (CInsert direc)) st 	= ejecutar_comando_insert_con_dir (Just (CInsert direc)) st
-	
-
+	ejecutar_comando_modo_comando (Just (CAppend direc)) st 	= ejecutar_comando_append_con_dir (Just (CAppend direc)) st
+ 
 	-- *** *** *** *** *** *** --
 	-- Ejecucion de los comandos especificos
 	-- *** *** *** *** *** *** --
@@ -167,7 +170,7 @@ module Comandos where
 		| a == 0 										= ("", (0, buf, ModoInsertar, esta_modificado, 'i', nom_arch))
 		| a > maximo								= ("?\n", (linea, buf, modo, esta_modificado, 'i', nom_arch))
 		| otherwise 								= ("", (a - 1, buf, ModoInsertar, esta_modificado, 'i', nom_arch))
-		where 
+		where  	
 			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 			maximo = length buf
 	ejecutar_comando_insert_con_dir (Just (CInsert (Direc (Rel a) []))) st 
@@ -180,8 +183,29 @@ module Comandos where
 			maximo = length buf
 			absoluta = (linea + a) + 1
 
-
-
+	ejecutar_comando_append_con_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_append_con_dir (Just (CInsert (Direc Ultima []))) st = ("" ,(length buf, buf, ModoInsertar, esta_modificado, 'i', nom_arch))
+		where 
+			(_, buf, _, esta_modificado, _, nom_arch) = st
+	ejecutar_comando_append_con_dir (Just (CInsert (Direc Corriente []))) st = ("", (linea + 1, buf, ModoInsertar, esta_modificado, 'i', nom_arch))
+		where 
+			(linea, buf, _, esta_modificado, _, nom_arch) = st
+	ejecutar_comando_append_con_dir (Just (CInsert (Direc (Abs a) []))) st 
+		| a == 0 										= ("", (1, buf, ModoInsertar, esta_modificado, 'i', nom_arch))
+		| a > maximo								= ("?\n", (linea, buf, modo, esta_modificado, 'i', nom_arch))
+		| otherwise 								= ("", (a, buf, ModoInsertar, esta_modificado, 'i', nom_arch))
+		where  	
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_append_con_dir (Just (CInsert (Direc (Rel a) []))) st 
+		| absoluta < 0 							= ("?\n", (linea, buf, modo, esta_modificado, 'i', nom_arch))
+		| absoluta > (maximo)				= ("?\n", (linea, buf, modo, esta_modificado, 'i', nom_arch))
+		| absoluta == (maximo)			= ("", (maximo, buf, ModoInsertar, esta_modificado, 'i', nom_arch))
+		| otherwise			 						= ("", (absoluta + 1, buf, ModoInsertar, esta_modificado, 'i', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			absoluta = (linea + a) + 1
 
 
 	-- *** *** *** *** *** *** --
