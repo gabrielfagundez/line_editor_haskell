@@ -14,7 +14,7 @@ module Main(main) where
 	main = do
 		args 		<- getArgs
 		buffer 	<- getLines $ head args
-		edi (length buffer - 1, buffer, ModoComando, False, 'I', head args) False
+		edi (length buffer, buffer, ModoComando, False, 'I', head args) False
 
 
 	-- *** *** *** *** *** *** --

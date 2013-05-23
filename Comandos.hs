@@ -7,7 +7,7 @@ module Comandos where
 
 	-- Definir Data Comando = ...
 	data Comando = 	CExitIncond | CExit | CInsertCurr | CWrite | CWriteArg Arg | CPrintCurr | Int |
-									CPrint Direc | CInsert Direc | CAppend Direc | CAppendCurr
+									CPrint Direc | CInsert Direc | CAppend Direc | CAppendCurr | CShow Direc | CShowCurr
 		deriving (Eq, Show)
 
 	data ConsoleState 	= ModoComando | ModoInsertar deriving (Eq, Ord, Show)
@@ -38,7 +38,7 @@ module Comandos where
 	comando = comando_salir `alt` comando_salir_incondicional `alt` comando_insertar_linea_actual 
 						`alt` comando_escribir `alt` comando_escribir_con_argumento `alt` comando_imprimir_actual 
 						`alt` comando_imprimir_con_direccion `alt` comando_insertar_con_direccion						
-						`alt` comando_append_con_direccion
+						`alt` comando_append_con_direccion `alt` comando_mostrar_linea_con_direccion
 
 
 	-- *** *** *** *** *** *** --
@@ -75,6 +75,9 @@ module Comandos where
 	comando_append_con_direccion :: Parse Char Comando
 	comando_append_con_direccion = (directions_parser >*> (action_parser_cond 'a')) `build` \(dir, _) -> CAppend dir
 
+	comando_mostrar_linea_con_direccion :: Parse Char Comando
+	comando_mostrar_linea_con_direccion = (directions_parser >*> (action_parser_cond 'n')) `build` \(dir, _) -> CShow dir
+
 
 	-- *** *** *** *** *** *** --
 	-- Ejecucion de los comandos
@@ -105,6 +108,7 @@ module Comandos where
 	ejecutar_comando_modo_comando (Just (CPrint direc)) st 		= ejecutar_comando_print_con_dir (Just (CPrint direc)) st
 	ejecutar_comando_modo_comando (Just (CInsert direc)) st 	= ejecutar_comando_insert_con_dir (Just (CInsert direc)) st
 	ejecutar_comando_modo_comando (Just (CAppend direc)) st 	= ejecutar_comando_append_con_dir (Just (CAppend direc)) st
+	ejecutar_comando_modo_comando (Just (CShow direc)) st 		= ejecutar_comando_show_con_dir (Just (CShow direc)) st
  
 	-- *** *** *** *** *** *** --
 	-- Ejecucion de los comandos especificos
@@ -217,6 +221,28 @@ module Comandos where
 			maximo = length buf
 			absoluta = (linea + a) + 1
 
+	ejecutar_comando_show_con_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_show_con_dir (Just (CShow (Direc Ultima []))) st = ((show $ length buf) ++ "\t" ++ obtener_linea (length buf - 1) buf ,(length buf - 1, buf, modo, esta_modificado, 'n', nom_arch))
+		where 
+			(_, buf, modo, esta_modificado, _, nom_arch) = st
+	ejecutar_comando_show_con_dir (Just (CShow (Direc Corriente []))) st = ((show $ linea) ++ "\t" ++ obtener_linea (linea - 1) buf, (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+	ejecutar_comando_show_con_dir (Just (CShow (Direc (Abs a) []))) st 
+		| a == 0 										= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		| a > maximo								= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		| otherwise 								= ((show $ a) ++ "\t" ++ obtener_linea (a - 1) buf, (a - 1, buf, modo, esta_modificado, 'n', nom_arch))
+		where  	
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_show_con_dir (Just (CShow (Direc (Rel a) []))) st 
+		| absoluta <= 0 						= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		| absoluta > (maximo)				= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		| otherwise									= ((show $ absoluta) ++ "\t" ++ obtener_linea (absoluta - 1) buf, (absoluta - 1, buf, modo, esta_modificado, 'n', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			absoluta = (linea + a) + 1
 
 	-- *** *** *** *** *** *** --
 	-- Funciones auxiliares

@@ -39,7 +39,7 @@ module DirectionsParser where
 	parse_todo :: Parse Char Base
 	parse_todo "" = []
 	parse_todo (x:xs) 
-		| x == '.' 			= [(Todo, xs)]
+		| x == ',' 			= [(Todo, xs)]
 		| otherwise 		= []
 
 	parse_ultima :: Parse Char Base
@@ -51,7 +51,7 @@ module DirectionsParser where
 	parse_corriente :: Parse Char Base	
 	parse_corriente "" = []
 	parse_corriente (x:xs) 
-		| x == '\'' 		= [(Corriente, xs)]
+		| x == '.'	 		= [(Corriente, xs)]
 		| otherwise 		= []
 
 	parse_absolute :: Parse Char Base
