@@ -87,11 +87,16 @@ module Comandos where
 	ejecutar_comando_modo_insertar :: String -> State -> (String, State)
 	ejecutar_comando_modo_insertar "." st = ("", (linea, buf, ModoComando, esta_modificado, ult_com, nom_arch))
 		where (linea, buf, _, esta_modificado, ult_com, nom_arch) = st
-	ejecutar_comando_modo_insertar string st@(_, _, _, _, _, _) = ("", (nueva_linea, nuevo_buffer, modo, True, ult_com, nom_arch))
+	ejecutar_comando_modo_insertar string st@(_, _, _, _, 'i', _) = ("", (nueva_linea, nuevo_buffer, modo, True, ult_com, nom_arch))
 		where 
 			(linea, buf, modo, esta_modificado, ult_com, nom_arch) = st
 			nueva_linea = (linea + 1)
-			nuevo_buffer = insert linea string buf
+			nuevo_buffer = insert (linea) string buf
+	ejecutar_comando_modo_insertar string st@(_, _, _, _, 'a', _) = ("", (nueva_linea, nuevo_buffer, modo, True, ult_com, nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, ult_com, nom_arch) = st
+			nueva_linea = (linea + 1)
+			nuevo_buffer = insert (linea + 1) string buf
 
 
 
@@ -148,28 +153,30 @@ module Comandos where
 			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 
 	ejecutar_comando_print_con_dir :: Maybe Comando -> State -> (String, State)
-	ejecutar_comando_print_con_dir (Just (CPrint (Direc Ultima []))) st = (obtener_linea (length buf - 1) buf ,(length buf - 1, buf, modo, esta_modificado, 'p', nom_arch))
+	ejecutar_comando_print_con_dir (Just (CPrint (Direc Ultima []))) st = 
+		(obtener_linea (length buf) buf ,(length buf, buf, modo, esta_modificado, 'p', nom_arch))
 		where 
 			(_, buf, modo, esta_modificado, _, nom_arch) = st
-	ejecutar_comando_print_con_dir (Just (CPrint (Direc Corriente []))) st = ((obtener_linea linea buf), (linea, buf, modo, esta_modificado, 'p', nom_arch))
+	ejecutar_comando_print_con_dir (Just (CPrint (Direc Corriente []))) st = 
+		((obtener_linea linea buf), (linea, buf, modo, esta_modificado, 'p', nom_arch))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 	ejecutar_comando_print_con_dir (Just (CPrint (Direc (Abs a) []))) st 
 		| a == 0 										= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
 		| a > maximo								= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
-		| otherwise 								= ((obtener_linea (a - 1) buf), (a - 1, buf, modo, esta_modificado, 'p', nom_arch))
+		| otherwise 								= ((obtener_linea a buf), (a, buf, modo, esta_modificado, 'p', nom_arch))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 			maximo = length buf
 	ejecutar_comando_print_con_dir (Just (CPrint (Direc (Rel a) []))) st 
-		| absoluta < 0 							= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
-		| absoluta > (maximo	- 1)	= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
-		| otherwise			 						= ((obtener_linea (absoluta) buf), (absoluta, buf, modo, esta_modificado, 'p', nom_arch))
+		| absoluta <= 0 						= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		| absoluta > maximo					= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		| otherwise			 						= ((obtener_linea absoluta buf), (absoluta, buf, modo, esta_modificado, 'p', nom_arch))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 			maximo = length buf
 			absoluta = linea + a
-	ejecutar_comando_print_con_dir (Just (CPrint (Direc Todo []))) st = (compactar buf ,(length buf - 1, buf, modo, esta_modificado, 'p', nom_arch))
+	ejecutar_comando_print_con_dir (Just (CPrint (Direc Todo []))) st = (compactar buf ,(length buf, buf, modo, esta_modificado, 'p', nom_arch))
 		where 
 			(_, buf, modo, esta_modificado, _, nom_arch) = st
 
