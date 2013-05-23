@@ -7,7 +7,7 @@ module Comandos where
 
 	-- Definir Data Comando = ...
 	data Comando = 	CExitIncond | CExit | CInsertCurr | CWrite | CWriteArg Arg | CPrintCurr | Int |
-									CPrint Direc | CInsert Direc | CAppend Direc
+									CPrint Direc | CInsert Direc | CAppend Direc | CAppendCurr
 		deriving (Eq, Show)
 
 	data ConsoleState 	= ModoComando | ModoInsertar deriving (Eq, Ord, Show)
@@ -54,6 +54,9 @@ module Comandos where
 	comando_insertar_linea_actual :: Parse Char Comando
 	comando_insertar_linea_actual = (action_parser_cond 'i') `build` const CInsertCurr
 
+	comando_append_linea_actual :: Parse Char Comando
+	comando_append_linea_actual = (action_parser_cond 'a') `build` const CAppendCurr
+
 	comando_escribir :: Parse Char Comando
 	comando_escribir = (action_parser_cond 'w') `build` const CWrite
 
@@ -97,6 +100,7 @@ module Comandos where
 		| (comando == Just CInsertCurr) 												= ejecutar_insertar_actual comando st
 		| (comando == Just CWrite)															=	ejecutar_comando_write comando st 
 		| (comando == Just CPrintCurr)													=	ejecutar_comando_print_current comando st 
+		| (comando == Just CAppendCurr)													= ejecutar_comando_append_current comando st
 	ejecutar_comando_modo_comando (Just (CWriteArg arg)) st 	= ejecutar_comando_write_con_ruta (Just (CWriteArg arg)) st
 	ejecutar_comando_modo_comando (Just (CPrint direc)) st 		= ejecutar_comando_print_con_dir (Just (CPrint direc)) st
 	ejecutar_comando_modo_comando (Just (CInsert direc)) st 	= ejecutar_comando_insert_con_dir (Just (CInsert direc)) st
@@ -117,6 +121,10 @@ module Comandos where
 
 	ejecutar_insertar_actual :: Maybe Comando -> State -> (String, State)
 	ejecutar_insertar_actual comando st = ("", (linea, buf, ModoInsertar, esta_modificado, 'Q', nom_arch))
+		where (linea, buf, _, esta_modificado, _, nom_arch) = st
+
+	ejecutar_comando_append_current :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_append_current comando st = ("", (linea + 1, buf, ModoInsertar, esta_modificado, 'Q', nom_arch))
 		where (linea, buf, _, esta_modificado, _, nom_arch) = st
 
 	ejecutar_comando_write :: Maybe Comando -> State -> (String, State)
