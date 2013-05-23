@@ -174,38 +174,35 @@ module Comandos where
 			(_, buf, modo, esta_modificado, _, nom_arch) = st
 
 	ejecutar_comando_insert_con_dir :: Maybe Comando -> State -> (String, State)
-	ejecutar_comando_insert_con_dir (Just (CInsert (Direc Ultima []))) st = ("" ,(length buf - 1, buf, ModoInsertar, esta_modificado, 'i', nom_arch))
+	ejecutar_comando_insert_con_dir (Just (CInsert (Direc Ultima []))) st = ("" ,(length buf, buf, ModoInsertar, esta_modificado, 'i', nom_arch))
 		where 
 			(_, buf, _, esta_modificado, _, nom_arch) = st
 	ejecutar_comando_insert_con_dir (Just (CInsert (Direc Corriente []))) st = ("", (linea, buf, ModoInsertar, esta_modificado, 'i', nom_arch))
 		where 
 			(linea, buf, _, esta_modificado, _, nom_arch) = st
 	ejecutar_comando_insert_con_dir (Just (CInsert (Direc (Abs a) []))) st 
-		| a == 0 										= ("", (0, buf, ModoInsertar, esta_modificado, 'i', nom_arch))
 		| a > maximo								= ("?\n", (linea, buf, modo, esta_modificado, 'i', nom_arch))
-		| otherwise 								= ("", (a - 1, buf, ModoInsertar, esta_modificado, 'i', nom_arch))
+		| otherwise 								= ("", (a, buf, ModoInsertar, esta_modificado, 'i', nom_arch))
 		where  	
 			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 			maximo = length buf
 	ejecutar_comando_insert_con_dir (Just (CInsert (Direc (Rel a) []))) st 
 		| absoluta < 0 							= ("?\n", (linea, buf, modo, esta_modificado, 'i', nom_arch))
-		| absoluta > (maximo)				= ("?\n", (linea, buf, modo, esta_modificado, 'i', nom_arch))
-		| absoluta == (maximo)			= ("", (maximo - 1, buf, ModoInsertar, esta_modificado, 'i', nom_arch))
+		| absoluta > maximo					= ("?\n", (linea, buf, modo, esta_modificado, 'i', nom_arch))
 		| otherwise			 						= ("", (absoluta, buf, ModoInsertar, esta_modificado, 'i', nom_arch))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 			maximo = length buf
-			absoluta = (linea + a) + 1
+			absoluta = linea + a
 
 	ejecutar_comando_append_con_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_append_con_dir (Just (CAppend (Direc Ultima []))) st = ("" ,(length buf, buf, ModoInsertar, esta_modificado, 'a', nom_arch))
 		where 
 			(_, buf, _, esta_modificado, _, nom_arch) = st
-	ejecutar_comando_append_con_dir (Just (CAppend (Direc Corriente []))) st = ("", (linea + 1, buf, ModoInsertar, esta_modificado, 'a', nom_arch))
+	ejecutar_comando_append_con_dir (Just (CAppend (Direc Corriente []))) st = ("", (linea, buf, ModoInsertar, esta_modificado, 'a', nom_arch))
 		where 
 			(linea, buf, _, esta_modificado, _, nom_arch) = st
 	ejecutar_comando_append_con_dir (Just (CAppend (Direc (Abs a) []))) st 
-		| a == 0 										= ("", (0, buf, ModoInsertar, esta_modificado, 'a', nom_arch))
 		| a > maximo								= ("?\n", (linea, buf, modo, esta_modificado, 'a', nom_arch))
 		| otherwise 								= ("", (a, buf, ModoInsertar, esta_modificado, 'a', nom_arch))
 		where  	
@@ -213,13 +210,12 @@ module Comandos where
 			maximo = length buf
 	ejecutar_comando_append_con_dir (Just (CAppend (Direc (Rel a) []))) st 
 		| absoluta < 0 							= ("?\n", (linea, buf, modo, esta_modificado, 'a', nom_arch))
-		| absoluta > (maximo)				= ("?\n", (linea, buf, modo, esta_modificado, 'a', nom_arch))
-		| absoluta == (maximo)			= ("", (maximo, buf, ModoInsertar, esta_modificado, 'a', nom_arch))
-		| otherwise			 						= ("", (absoluta + 1, buf, ModoInsertar, esta_modificado, 'a', nom_arch))
+		| absoluta > maximo					= ("?\n", (linea, buf, modo, esta_modificado, 'a', nom_arch))
+		| otherwise			 						= ("", (absoluta, buf, ModoInsertar, esta_modificado, 'a', nom_arch))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 			maximo = length buf
-			absoluta = (linea + a) + 1
+			absoluta = linea + a
 
 	ejecutar_comando_show_con_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_show_con_dir (Just (CShow (Direc Ultima []))) st = 
