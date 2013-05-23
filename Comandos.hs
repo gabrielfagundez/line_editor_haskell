@@ -222,27 +222,29 @@ module Comandos where
 			absoluta = (linea + a) + 1
 
 	ejecutar_comando_show_con_dir :: Maybe Comando -> State -> (String, State)
-	ejecutar_comando_show_con_dir (Just (CShow (Direc Ultima []))) st = ((show $ length buf) ++ "\t" ++ obtener_linea (length buf - 1) buf ,(length buf - 1, buf, modo, esta_modificado, 'n', nom_arch))
+	ejecutar_comando_show_con_dir (Just (CShow (Direc Ultima []))) st = 
+		((show $ length buf) ++ "\t" ++ obtener_linea (length buf) buf ,(length buf, buf, modo, esta_modificado, 'n', nom_arch))
 		where 
 			(_, buf, modo, esta_modificado, _, nom_arch) = st
-	ejecutar_comando_show_con_dir (Just (CShow (Direc Corriente []))) st = ((show $ linea) ++ "\t" ++ obtener_linea (linea - 1) buf, (linea, buf, modo, esta_modificado, 'n', nom_arch))
+	ejecutar_comando_show_con_dir (Just (CShow (Direc Corriente []))) st = 
+		((show $ linea) ++ "\t" ++ obtener_linea (linea) buf, (linea, buf, modo, esta_modificado, 'n', nom_arch))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 	ejecutar_comando_show_con_dir (Just (CShow (Direc (Abs a) []))) st 
 		| a == 0 										= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
 		| a > maximo								= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
-		| otherwise 								= ((show $ a) ++ "\t" ++ obtener_linea (a - 1) buf, (a - 1, buf, modo, esta_modificado, 'n', nom_arch))
+		| otherwise 								= ((show $ a) ++ "\t" ++ obtener_linea a buf, (a, buf, modo, esta_modificado, 'n', nom_arch))
 		where  	
 			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 			maximo = length buf
 	ejecutar_comando_show_con_dir (Just (CShow (Direc (Rel a) []))) st 
 		| absoluta <= 0 						= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
-		| absoluta > (maximo)				= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
-		| otherwise									= ((show $ absoluta) ++ "\t" ++ obtener_linea (absoluta - 1) buf, (absoluta - 1, buf, modo, esta_modificado, 'n', nom_arch))
+		| absoluta > maximo					= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		| otherwise									= ((show $ absoluta) ++ "\t" ++ obtener_linea absoluta buf, (absoluta, buf, modo, esta_modificado, 'n', nom_arch))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 			maximo = length buf
-			absoluta = (linea + a) + 1
+			absoluta = linea + a
 
 	-- *** *** *** *** *** *** --
 	-- Funciones auxiliares
@@ -274,7 +276,8 @@ module Comandos where
 	quitar_espacios_string xs = dropWhile (== ' ') xs
 
 	obtener_linea :: Int -> [String] -> String
-	obtener_linea linea buf = (buf !! linea) ++ ['\n']
+	obtener_linea linea buf = (buf !! (linea - 1)) ++ ['\n']
 
+	compactar :: [String] -> String
 	compactar = unlines
 
