@@ -90,12 +90,12 @@ module Comandos where
 	ejecutar_comando_modo_insertar string st@(_, _, _, _, 'i', _) = ("", (nueva_linea, nuevo_buffer, modo, True, ult_com, nom_arch))
 		where 
 			(linea, buf, modo, esta_modificado, ult_com, nom_arch) = st
-			nueva_linea = (linea + 1)
+			nueva_linea = linea
 			nuevo_buffer = insert (linea) string buf
 	ejecutar_comando_modo_insertar string st@(_, _, _, _, 'a', _) = ("", (nueva_linea, nuevo_buffer, modo, True, ult_com, nom_arch))
 		where 
 			(linea, buf, modo, esta_modificado, ult_com, nom_arch) = st
-			nueva_linea = (linea + 1)
+			nueva_linea = linea + 1
 			nuevo_buffer = insert (linea + 1) string buf
 
 
