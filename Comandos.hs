@@ -81,12 +81,14 @@ module Comandos where
 	ejecutar_comando_modo_insertar :: String -> State -> (String, State)
 	ejecutar_comando_modo_insertar "." st = ("", (linea, buf, ModoComando, esta_modificado, ult_com, nom_arch))
 		where (linea, buf, _, esta_modificado, ult_com, nom_arch) = st
-	ejecutar_comando_modo_insertar string st = ("", (nueva_linea, nuevo_buffer, modo, True, ult_com, nom_arch))
+	ejecutar_comando_modo_insertar string st@(_, _, _, _, _, _) = ("", (nueva_linea, nuevo_buffer, modo, True, ult_com, nom_arch))
 		where 
 			(linea, buf, modo, esta_modificado, ult_com, nom_arch) = st
 			nueva_linea = (linea + 1)
 			nuevo_buffer = insert linea string buf
-	
+
+
+
 	-- Ejecucion en modo comando
 	ejecutar_comando_modo_comando :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_modo_comando comando st 
