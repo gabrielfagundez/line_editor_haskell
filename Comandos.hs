@@ -7,7 +7,8 @@ module Comandos where
 
 	-- Definir Data Comando = ...
 	data Comando = 	CExitIncond | CExit | CInsertCurr | CWrite | CWriteArg Arg | CPrintCurr | Int |
-									CPrint Direc | CInsert Direc | CAppend Direc | CAppendCurr | CShow Direc | CShowCurr
+									CPrint Direc | CInsert Direc | CAppend Direc | CAppendCurr | CShow Direc | CShowCurr |
+									CPrintT Direc Direc |CShowT Direc Direc
 		deriving (Eq, Show)
 
 	data ConsoleState 	= ModoComando | ModoInsertar deriving (Eq, Ord, Show)
@@ -39,6 +40,7 @@ module Comandos where
 						`alt` comando_escribir `alt` comando_escribir_con_argumento `alt` comando_imprimir_actual 
 						`alt` comando_imprimir_con_direccion `alt` comando_insertar_con_direccion						
 						`alt` comando_append_con_direccion `alt` comando_mostrar_linea_con_direccion
+						`alt` comando_imprimir_con_dos_dir `alt` comando_mostrar_linea_con_dos_dir
 
 
 	-- *** *** *** *** *** *** --
@@ -66,6 +68,7 @@ module Comandos where
 	comando_imprimir_actual :: Parse Char Comando
 	comando_imprimir_actual = (action_parser_cond 'p') `build` const CPrintCurr
 
+	
 	comando_imprimir_con_direccion :: Parse Char Comando
 	comando_imprimir_con_direccion = (directions_parser >*> (action_parser_cond 'p')) `build` \(dir, _) -> CPrint dir
 
@@ -77,6 +80,13 @@ module Comandos where
 
 	comando_mostrar_linea_con_direccion :: Parse Char Comando
 	comando_mostrar_linea_con_direccion = (directions_parser >*> (action_parser_cond 'n')) `build` \(dir, _) -> CShow dir
+
+
+	comando_imprimir_con_dos_dir :: Parse Char Comando
+	comando_imprimir_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'p')) `build` \(dir1,(_,(dir2, _))) -> CPrintT dir1 dir2
+
+	comando_mostrar_linea_con_dos_dir :: Parse Char Comando
+	comando_mostrar_linea_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'n')) `build` \(dir1,(_,(dir2, _))) -> CShowT dir1 dir2
 
 
 	-- *** *** *** *** *** *** --
@@ -114,7 +124,11 @@ module Comandos where
 	ejecutar_comando_modo_comando (Just (CInsert direc)) st 	= ejecutar_comando_insert_con_dir (Just (CInsert direc)) st
 	ejecutar_comando_modo_comando (Just (CAppend direc)) st 	= ejecutar_comando_append_con_dir (Just (CAppend direc)) st
 	ejecutar_comando_modo_comando (Just (CShow direc)) st 		= ejecutar_comando_show_con_dir (Just (CShow direc)) st
- 
+	ejecutar_comando_modo_comando (Just (CPrintT direc1 direc2)) st 		= ejecutar_comando_print_con_dos_dir (Just (CPrintT direc1 direc2)) st
+ 	ejecutar_comando_modo_comando (Just (CShowT direc1 direc2)) st 			= ejecutar_comando_show_con_dos_dir (Just (CShowT direc1 direc2)) st
+
+
+
 	-- *** *** *** *** *** *** --
 	-- Ejecucion de los comandos especificos
 	-- *** *** *** *** *** *** --
@@ -315,6 +329,268 @@ module Comandos where
 			maximo = length buf
 			offset = foldr (+) 0 off 
 
+
+
+
+
+	-- *** *** *** *** *** *** --
+	-- Ejecucion de comandos con dos direcciones
+	-- *** *** *** *** *** *** --
+
+	ejecutar_comando_show_con_dos_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc Ultima off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_show_automatico (maximo + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc Corriente off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_show_automatico (linea + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc (Abs a) off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_show_automatico (a + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc (Rel a) off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_show_automatico (a + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc Corriente off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_show_automatico (linea + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc Ultima off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_show_automatico (maximo + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc (Abs a) off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_show_automatico (a + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc (Rel a) off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_show_automatico (a + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc Ultima off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_show_automatico (maximo + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc (Rel a) off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_show_automatico (a + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc Ultima off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_show_automatico (maximo + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc (Abs a) off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_show_automatico (a + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc Corriente off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_show_automatico (linea + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc (Rel a) off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_show_automatico (a + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc Corriente off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_show_automatico (linea + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc (Abs a) off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_show_automatico (a + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+
+	ejecutar_comando_show_automatico :: Int -> Int -> State -> (String, State)
+	ejecutar_comando_show_automatico indice1 indice2 st
+		| indice1 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))	
+		| indice2 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))	
+		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))	
+		|	indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))	
+		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))	
+		| otherwise 							= (obtener_lineas_con_tabulador_e_indice indice1 indice2 buf, (indice2, buf, modo, esta_modificado, 'n', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+
+	ejecutar_comando_print_con_dos_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc Ultima off1) (Direc Ultima off2))) st =
+		ejecutar_comando_print_automatico (maximo + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc Corriente off1) (Direc Corriente  off2))) st = 
+		ejecutar_comando_print_automatico (linea + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc (Abs a) off1) (Direc (Abs b) off2))) st =
+		ejecutar_comando_print_automatico (a + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc (Rel a) off1) (Direc (Rel b) off2))) st =
+		ejecutar_comando_print_automatico (a + offset1) (b+ offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc (Abs a) off1) (Direc (Rel b) off2))) st =
+		ejecutar_comando_print_automatico (a + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc (Rel a) off1) (Direc (Abs b) off2))) st =
+		ejecutar_comando_print_automatico (a + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc Ultima off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_print_automatico (maximo + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc Corriente off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_print_automatico (linea + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc Corriente off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_print_automatico (linea + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc Corriente off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_print_automatico (linea + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc Ultima off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_print_automatico (maximo + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc Ultima off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_print_automatico (maximo + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc (Rel a) off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_print_automatico (a + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc (Rel a) off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_print_automatico (a + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc (Abs a) off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_print_automatico (a + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc (Abs a) off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_print_automatico (a + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+
+
+	ejecutar_comando_print_automatico :: Int -> Int -> State -> (String, State)
+	ejecutar_comando_print_automatico indice1 indice2 st
+		| indice1 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))	
+		| indice2 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))	
+		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))	
+		|	indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))	
+		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))	
+		| otherwise 							= (obtener_lineas indice1 indice2 buf, (indice2, buf, modo, esta_modificado, 'p', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+
+
 	-- *** *** *** *** *** *** --
 	-- Funciones auxiliares
 	-- *** *** *** *** *** *** --
@@ -350,16 +626,16 @@ module Comandos where
 	compactar :: [String] -> String
 	compactar = unlines
 
-	obtener_lineas :: Int -> Int -> [[a]] -> [a]
+	obtener_lineas :: Int -> Int -> [String] -> String
 	obtener_lineas ini fin [] = []
 	obtener_lineas ini fin arr
 		| ini > fin 						=	[]
-		| ini == fin 						=	(arr !! (ini - 1))
-		| otherwise 						= (arr !! (ini - 1)) ++ obtener_lineas (ini + 1) fin arr  
+		| ini == fin 						=	(arr !! (ini - 1)) ++ "\n"
+		| otherwise 						= (arr !! (ini - 1)) ++ "\n" ++ obtener_lineas (ini + 1) fin arr  
 
 	obtener_lineas_con_tabulador_e_indice :: Int -> Int -> [String] -> String
 	obtener_lineas_con_tabulador_e_indice ini fin [] = []
 	obtener_lineas_con_tabulador_e_indice ini fin arr
 		| ini > fin 						=	[]
 		| ini == fin 						=	(show ini) ++ "\t" ++ (arr !! (ini - 1)) ++ "\n"
-		| otherwise 						= ((show ini) ++ "\t" ++ (arr !! (ini - 1))) ++ "\n" ++ obtener_lineas (ini + 1) fin arr
+		| otherwise 						= (((show ini) ++ "\t" ++ (arr !! (ini - 1))) ++ "\n") ++ obtener_lineas_con_tabulador_e_indice (ini + 1) fin arr
