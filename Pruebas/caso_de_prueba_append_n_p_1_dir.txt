@@ -1,0 +1,110 @@
+*Main> :main test.txt 
+40
+a
+hola
+.
+p
+hola
+,p
+Linea 1
+Linea 2
+Linea 3
+Linea 4
+Linea 5
+hola
+-3a
+asd
+dsa
+.
+p
+dsa
+,p
+Linea 1
+Linea 2
+Linea 3
+asd
+dsa
+Linea 4
+Linea 5
+hola
+$a
+sss
+.
+p
+sss
+-15a
+?
++8a
+?
+.a
+ddd
+sss
+aaa
+.
+p
+aaa
+,p
+Linea 1
+Linea 2
+Linea 3
+asd
+dsa
+Linea 4
+Linea 5
+hola
+sss
+ddd
+sss
+aaa
+q
+?
+-5a
+tre
+.
+p
+tre
+,p
+Linea 1
+Linea 2
+Linea 3
+asd
+dsa
+Linea 4
+Linea 5
+tre
+hola
+sss
+ddd
+sss
+aaa
+.n
+13	aaa
+-5n
+8	tre
+.n
+8	tre
+$n
+13	aaa
+1n
+1	Linea 1
+0n
+?
+14n
+?
+13n
+13	aaa
+7n
+7	Linea 5
+-3n
+4	asd
+-3p
+Linea 1
+.n
+1	Linea 1
+.p
+Linea 1
+25p
+?
+.n
+1	Linea 1
+

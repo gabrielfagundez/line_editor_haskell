@@ -14,7 +14,7 @@ module Main(main) where
 	main = do
 		args 		<- getArgs
 		buffer 	<- getLines $ head args
-		edi (length buffer, buffer, ModoComando, False, 'I', head args) False
+		edi (length buffer, buffer, ModoComando, False, 'I', head args, [], 0) False
 
 
 	-- *** *** *** *** *** *** --
@@ -26,19 +26,19 @@ module Main(main) where
 	edi estado debo_salir =
 		if (not debo_salir) then (
 			do
-				let (_, buffer, _, _, ultimo_comando, _) = estado 
+				let (_, buffer, _, _, ultimo_comando, _, _, _)	 = estado 
 				let (a_imprimir, estado_actual) = imprimir_cantidad_palabras ultimo_comando estado
 				putStr a_imprimir
 				
 				linea_leida <- getLine -- Lee el String de la entrada hasta el fin de linea
 				
-				let (_, _, modo_actual, buf_mod, _, _)	 		= estado_actual 
-				let comando_leido														= parse_string_entrada linea_leida
-				let (a_mostrar, nuevo_estado) 							= actualizar linea_leida comando_leido estado_actual
+				let (_, _, modo_actual, buf_mod, _, _, _, _)	 	= estado_actual 
+				let comando_leido																= parse_string_entrada linea_leida
+				let (a_mostrar, nuevo_estado) 									= actualizar linea_leida comando_leido estado_actual
 				
 				putStr a_mostrar
 
-				let (_, buf, _, _, comando_ejecutado, nom_arch)	 		= nuevo_estado
+				let (_, buf, _, _, comando_ejecutado, nom_arch, _, _)	 		= nuevo_estado
 				salvar comando_ejecutado nom_arch buf
 				
 				-- Llamada recursiva a si mismo con estado modificado
@@ -74,12 +74,12 @@ module Main(main) where
 	actualizar string com prev_state
 		| (mod == ModoInsertar)				=	actualizar_insertar string prev_state
 		| (mod == ModoComando) 				= actualizar_comando com prev_state
-		where (_, _, mod, _, _, _) = prev_state
+		where (_, _, mod, _, _, _, _, _) = prev_state
 
 	-- Funcion que ejecuta el comando sobre el estado y retorna nuevos estado y String a mostrar
 	actualizar_comando :: Maybe Comando -> State -> (String, State)
-	actualizar_comando Nothing prev_state = ("?\n", (linea, buf, modo, esta_modificado, '?', nom_arch))
-		where (linea, buf, modo, esta_modificado, _, nom_arch) = prev_state
+	actualizar_comando Nothing prev_state = ("?\n", (linea, buf, modo, esta_modificado, '?', nom_arch, papelera, aux))
+		where (linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = prev_state
 	actualizar_comando comando prev_state = ejecutar_comando_modo_comando comando prev_state
 
 	-- Funcion que ejecuta el comando sobre el estado y retorna nuevos estado y String a mostrar
@@ -93,11 +93,11 @@ module Main(main) where
 	-- Funcion que chequea si debe imprimir conteo de palabras y lo retorna
 	imprimir_cantidad_palabras :: Char -> State -> (String, State)
 	imprimir_cantidad_palabras ultimo_comando estado
-		| ultimo_comando == 'I'			= (cantidad ++ "\n", (linea, buf, modo, esta_modificado, 'G', nom_arch))
-		| ultimo_comando == 'w'			= (cantidad ++ "\n", (linea, buf, modo, esta_modificado, 'G', nom_arch))
+		| ultimo_comando == 'I'			= (cantidad ++ "\n", (linea, buf, modo, esta_modificado, 'G', nom_arch, papelera, aux))
+		| ultimo_comando == 'w'			= (cantidad ++ "\n", (linea, buf, modo, esta_modificado, 'G', nom_arch, papelera, aux))
 		| otherwise									= ("", estado)
 		where 
-			(linea, buf, modo, esta_modificado, i, nom_arch) = estado 
+			(linea, buf, modo, esta_modificado, i, nom_arch, papelera, aux) = estado 
 			cantidad = show $ cantidad_palabras buf
 
 	cantidad_palabras :: [String] -> Int
