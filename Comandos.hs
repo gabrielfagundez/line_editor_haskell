@@ -179,6 +179,66 @@ module Comandos where
 	ejecutar_comando_print_con_dir (Just (CPrint (Direc Todo []))) st = (compactar buf ,(length buf, buf, modo, esta_modificado, 'p', nom_arch))
 		where 
 			(_, buf, modo, esta_modificado, _, nom_arch) = st
+	ejecutar_comando_print_con_dir (Just (CPrint (Direc Ultima [ini]))) st
+		| ini > 0 									= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))			
+		| maximo + ini <= 0					= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		| otherwise 								= ((obtener_linea (maximo + ini) buf), (maximo + ini, buf, modo, esta_modificado, 'p', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_print_con_dir (Just (CPrint (Direc Corriente [ini]))) st
+		| linea + ini > maximo	 		= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))			
+		| linea + ini <= 0					= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		| otherwise 								= ((obtener_linea (linea + ini) buf), (linea + ini, buf, modo, esta_modificado, 'p', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_print_con_dir (Just (CPrint (Direc (Abs a) [ini]))) st
+		| a + ini > maximo	 				= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))			
+		| a + ini <= 0							= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		| otherwise 								= ((obtener_linea (a + ini) buf), (a + ini, buf, modo, esta_modificado, 'p', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_print_con_dir (Just (CPrint (Direc (Rel a) [ini]))) st
+		| a + ini > maximo	 			= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))			
+		| a + ini <= 0							= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		| otherwise 								= ((obtener_linea (a + ini) buf), (a + ini, buf, modo, esta_modificado, 'p', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_print_con_dir(Just (CPrint (Direc Ultima [ini, fin]))) st
+		| fin > 0 									= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		| ini >= maximo							= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		| otherwise 								= (obtener_lineas (maximo+ini) (maximo+fin) buf, (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_print_con_dir(Just (CPrint (Direc Corriente [ini, fin]))) st
+		| linea + ini <= 0 					= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		| linea + fin > maximo			= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		| otherwise 								= (obtener_lineas (linea+ini) (linea+fin) buf, (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_print_con_dir(Just (CPrint (Direc (Abs a) [ini, fin]))) st
+		| a + ini <= 0							= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		| a + fin > maximo 					= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		| otherwise									= (obtener_lineas (a+ini) (a+fin) buf, (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_print_con_dir(Just (CPrint (Direc (Rel a) [ini, fin]))) st
+		| linea + a + ini <= 0 			= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		| linea + a + fin > maximo 	= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		| otherwise 								= (obtener_lineas (a+ini) (a+fin) buf, (linea, buf, modo, esta_modificado, 'p', nom_arch))								
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_print_con_dir com st = 
+		("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 
 	ejecutar_comando_insert_con_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_insert_con_dir (Just (CInsert (Direc Ultima []))) st = ("" ,(length buf, buf, ModoInsertar, esta_modificado, 'i', nom_arch))
@@ -201,6 +261,7 @@ module Comandos where
 			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 			maximo = length buf
 			absoluta = linea + a
+	ejecutar_comando_insert_con_dir com st = ("?\n", st)
 
 	ejecutar_comando_append_con_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_append_con_dir (Just (CAppend (Direc Ultima []))) st = ("" ,(length buf, buf, ModoInsertar, esta_modificado, 'a', nom_arch))
@@ -223,6 +284,7 @@ module Comandos where
 			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 			maximo = length buf
 			absoluta = linea + a
+	ejecutar_comando_append_con_dir com st = ("?\n", st)
 
 	ejecutar_comando_show_con_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_show_con_dir (Just (CShow (Direc Ultima []))) st = 
@@ -248,6 +310,66 @@ module Comandos where
 			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 			maximo = length buf
 			absoluta = linea + a
+	ejecutar_comando_show_con_dir (Just (CShow (Direc Ultima [ini]))) st
+		| ini > 0 									= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))			
+		| maximo + ini <= 0					= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		| otherwise 								= ((show $ (maximo + ini)) ++ "\t" ++ (obtener_linea (maximo + ini) buf), (maximo + ini, buf, modo, esta_modificado, 'n', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_show_con_dir (Just (CShow (Direc Corriente [ini]))) st
+		| linea + ini > maximo	 		= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))			
+		| linea + ini <= 0					= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		| otherwise 								= ((show $ (linea + ini)) ++ "\t" ++ (obtener_linea (linea + ini) buf), (linea + ini, buf, modo, esta_modificado, 'n', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_show_con_dir (Just (CShow (Direc (Abs a) [ini]))) st
+		| a + ini > maximo	 				= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))			
+		| a + ini <= 0							= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		| otherwise 								= ((show $ (a + ini)) ++ "\t" ++ (obtener_linea (a + ini) buf), (a + ini, buf, modo, esta_modificado, 'n', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_show_con_dir (Just (CShow (Direc (Rel a) [ini]))) st
+		| a + ini > maximo	 			= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))			
+		| a + ini <= 0							= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		| otherwise 								= ((show $ (a + ini)) ++ "\t" ++ (obtener_linea (a + ini) buf), (a + ini, buf, modo, esta_modificado, 'n', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_show_con_dir(Just (CShow (Direc Ultima [ini, fin]))) st
+		| fin > 0 									= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		| ini >= maximo							= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		| otherwise 								= (obtener_lineas_con_tabulador_e_indice (maximo+ini) (maximo+fin) buf, (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_show_con_dir(Just (CShow (Direc Corriente [ini, fin]))) st
+		| linea + ini <= 0 					= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		| linea + fin > maximo			= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		| otherwise 								= (obtener_lineas_con_tabulador_e_indice (linea+ini) (linea+fin) buf, (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_show_con_dir(Just (CShow (Direc (Abs a) [ini, fin]))) st
+		| a + ini <= 0							= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		| a + fin > maximo 					= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		| otherwise									= (obtener_lineas_con_tabulador_e_indice (a+ini) (a+fin) buf, (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_show_con_dir(Just (CShow (Direc (Rel a) [ini, fin]))) st
+		| linea + a + ini <= 0 			= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		| linea + a + fin > maximo 	= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		| otherwise 								= (obtener_lineas_con_tabulador_e_indice (a+ini) (a+fin) buf, (linea, buf, modo, esta_modificado, 'n', nom_arch))								
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+	ejecutar_comando_show_con_dir com st =
+		("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 
 	-- *** *** *** *** *** *** --
 	-- Funciones auxiliares
@@ -284,3 +406,16 @@ module Comandos where
 	compactar :: [String] -> String
 	compactar = unlines
 
+	obtener_lineas :: Int -> Int -> [[a]] -> [a]
+	obtener_lineas ini fin [] = []
+	obtener_lineas ini fin arr
+		| ini > fin 						=	[]
+		| ini == fin 						=	(arr !! (ini - 1))
+		| otherwise 						= (arr !! (ini - 1)) ++ obtener_lineas (ini + 1) fin arr  
+
+	obtener_lineas_con_tabulador_e_indice :: Int -> Int -> [String] -> String
+	obtener_lineas_con_tabulador_e_indice ini fin [] = []
+	obtener_lineas_con_tabulador_e_indice ini fin arr
+		| ini > fin 						=	[]
+		| ini == fin 						=	(show ini) ++ "\t" ++ (arr !! (ini - 1))
+		| otherwise 						= ((show ini) ++ "\t" ++ (arr !! (ini - 1))) ++ obtener_lineas (ini + 1) fin arr
