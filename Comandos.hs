@@ -8,7 +8,7 @@ module Comandos where
 	-- Definir Data Comando = ...
 	data Comando = 	CExitIncond | CExit | CInsertCurr | CWrite | CWriteArg Arg | CPrintCurr | Int |
 									CPrint Direc | CInsert Direc | CAppend Direc | CAppendCurr | CShow Direc | CShowCurr |
-									CPrintT Direc Direc |CShowT Direc Direc
+									CPrintT Direc Direc |CShowT Direc Direc | CDelete Direc | CDeleteCurr | CDeleteT Direc Direc 
 		deriving (Eq, Show)
 
 	data ConsoleState 	= ModoComando | ModoInsertar deriving (Eq, Ord, Show)
@@ -41,6 +41,8 @@ module Comandos where
 						`alt` comando_imprimir_con_direccion `alt` comando_insertar_con_direccion						
 						`alt` comando_append_con_direccion `alt` comando_mostrar_linea_con_direccion
 						`alt` comando_imprimir_con_dos_dir `alt` comando_mostrar_linea_con_dos_dir
+						`alt` comando_borrar_linea_con_direccion `alt` comando_borrar_actual
+						`alt` comando_borrar_con_dos_dir
 
 
 	-- *** *** *** *** *** *** --
@@ -68,6 +70,12 @@ module Comandos where
 	comando_imprimir_actual :: Parse Char Comando
 	comando_imprimir_actual = (action_parser_cond 'p') `build` const CPrintCurr
 
+	comando_borrar_actual :: Parse Char Comando
+	comando_borrar_actual = (action_parser_cond 'd') `build` const CDeleteCurr
+
+	comando_show_actual :: Parse Char Comando
+	comando_show_actual = (action_parser_cond 'n') `build` const CShowCurr
+
 	
 	comando_imprimir_con_direccion :: Parse Char Comando
 	comando_imprimir_con_direccion = (directions_parser >*> (action_parser_cond 'p')) `build` \(dir, _) -> CPrint dir
@@ -81,12 +89,18 @@ module Comandos where
 	comando_mostrar_linea_con_direccion :: Parse Char Comando
 	comando_mostrar_linea_con_direccion = (directions_parser >*> (action_parser_cond 'n')) `build` \(dir, _) -> CShow dir
 
+	comando_borrar_linea_con_direccion :: Parse Char Comando
+	comando_borrar_linea_con_direccion = (directions_parser >*> (action_parser_cond 'd')) `build` \(dir, _) -> CDelete dir
+
 
 	comando_imprimir_con_dos_dir :: Parse Char Comando
 	comando_imprimir_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'p')) `build` \(dir1,(_,(dir2, _))) -> CPrintT dir1 dir2
 
 	comando_mostrar_linea_con_dos_dir :: Parse Char Comando
 	comando_mostrar_linea_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'n')) `build` \(dir1,(_,(dir2, _))) -> CShowT dir1 dir2
+
+	comando_borrar_con_dos_dir :: Parse Char Comando
+	comando_borrar_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'd')) `build` \(dir1,(_,(dir2, _))) -> CDeleteT dir1 dir2
 
 
 	-- *** *** *** *** *** *** --
@@ -119,18 +133,22 @@ module Comandos where
 		| (comando == Just CWrite)															=	ejecutar_comando_write comando st 
 		| (comando == Just CPrintCurr)													=	ejecutar_comando_print_current comando st 
 		| (comando == Just CAppendCurr)													= ejecutar_comando_append_current comando st
+		| (comando == Just CDeleteCurr)													=	ejecutar_comando_delete_current comando st
+		| (comando == Just CShowCurr)														= ejecutar_comando_show_current comando st
 	ejecutar_comando_modo_comando (Just (CWriteArg arg)) st 	= ejecutar_comando_write_con_ruta (Just (CWriteArg arg)) st
 	ejecutar_comando_modo_comando (Just (CPrint direc)) st 		= ejecutar_comando_print_con_dir (Just (CPrint direc)) st
 	ejecutar_comando_modo_comando (Just (CInsert direc)) st 	= ejecutar_comando_insert_con_dir (Just (CInsert direc)) st
 	ejecutar_comando_modo_comando (Just (CAppend direc)) st 	= ejecutar_comando_append_con_dir (Just (CAppend direc)) st
 	ejecutar_comando_modo_comando (Just (CShow direc)) st 		= ejecutar_comando_show_con_dir (Just (CShow direc)) st
+	ejecutar_comando_modo_comando (Just (CDelete direc)) st 	= ejecutar_comando_delete_con_dir (Just (CDelete direc)) st  
 	ejecutar_comando_modo_comando (Just (CPrintT direc1 direc2)) st 		= ejecutar_comando_print_con_dos_dir (Just (CPrintT direc1 direc2)) st
  	ejecutar_comando_modo_comando (Just (CShowT direc1 direc2)) st 			= ejecutar_comando_show_con_dos_dir (Just (CShowT direc1 direc2)) st
+ 	ejecutar_comando_modo_comando (Just (CDeleteT direc1 direc2)) st 		= ejecutar_comando_delete_con_dos_dir (Just (CShowT direc1 direc2)) st
 
 
 
 	-- *** *** *** *** *** *** --
-	-- Ejecucion de los comandos especificos
+	-- Ejecucion de los comandos especificos con una o ninguna direccion
 	-- *** *** *** *** *** *** --
 
 	ejecutar_salir :: Maybe Comando -> State -> (String, State)
@@ -163,6 +181,17 @@ module Comandos where
 
 	ejecutar_comando_print_current :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_print_current comando st = ((obtener_linea linea buf), (linea, buf, modo, esta_modificado, 'p', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+
+	ejecutar_comando_show_current :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_show_current comando st = 
+		((show $ linea) ++ "\t" ++ obtener_linea (linea) buf, (linea, buf, modo, esta_modificado, 'n', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+
+	ejecutar_comando_delete_current :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_delete_current comando st = borrar_linea linea st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 
@@ -329,6 +358,42 @@ module Comandos where
 			maximo = length buf
 			offset = foldr (+) 0 off 
 
+	ejecutar_comando_delete_con_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_delete_con_dir (Just (CShow (Direc Ultima off))) st =
+		borrar_linea (maximo + offset) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset = foldr (+) 0 off
+	ejecutar_comando_delete_con_dir (Just (CShow (Direc Corriente off))) st = 
+		borrar_linea (linea + offset) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset = foldr (+) 0 off
+	ejecutar_comando_delete_con_dir (Just (CShow (Direc (Abs a) off))) st =
+		borrar_linea (a + offset) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset = foldr (+) 0 off
+	ejecutar_comando_delete_con_dir (Just (CShow (Direc (Rel a) off))) st =
+		borrar_linea (a + offset) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset = foldr (+) 0 off
+
+	borrar_linea a st 
+		| a <= 0 				= ("?\n", (linea, buf, modo, esta_modificado, 'I', nom_arch))
+		| a > maximo 		= ("?\n", (linea, buf, modo, esta_modificado, 'I', nom_arch))
+		| otherwise			= ("", (a, borrar_linea_buf linea buf, modo, esta_modificado, 'I', nom_arch))
+		where  	
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+
+	borrar_linea_buf linea [] = []
+	borrar_linea_buf linea arr = take (linea-1) arr ++ drop linea arr
 
 
 
@@ -589,6 +654,135 @@ module Comandos where
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch) = st
 			maximo = length buf
+
+	ejecutar_comando_delete_con_dos_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc Ultima off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_delete_automatico (maximo + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc Corriente off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_delete_automatico (linea + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc (Abs a) off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_delete_automatico (a + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc (Rel a) off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_delete_automatico (a + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc Corriente off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_delete_automatico (linea + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc Ultima off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_delete_automatico (maximo + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc (Abs a) off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_delete_automatico (a + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc (Rel a) off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_delete_automatico (a + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc Ultima off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_delete_automatico (maximo + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc (Rel a) off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_delete_automatico (a + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc Ultima off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_delete_automatico (maximo + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc (Abs a) off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_delete_automatico (a + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc Corriente off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_delete_automatico (linea + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc (Rel a) off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_delete_automatico (a + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc Corriente off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_delete_automatico (linea + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc (Abs a) off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_delete_automatico (a + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+
+	ejecutar_comando_delete_automatico :: Int -> Int -> State -> (String, State)
+	ejecutar_comando_delete_automatico indice1 indice2 st
+		| indice1 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))	
+		| indice2 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))	
+		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))	
+		|	indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))	
+		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch))	
+		| otherwise 							= ("", (indice1, borrar_lineas indice1 indice2 buf, modo, True, 'I', nom_arch))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch) = st
+			maximo = length buf
+
+	borrar_lineas :: Int -> Int -> [a] -> [a]
+	borrar_lineas indice1 indice2 buf = take (indice1-1) buf ++ drop indice2 buf
 
 
 	-- *** *** *** *** *** *** --
