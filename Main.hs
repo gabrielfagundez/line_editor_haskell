@@ -30,7 +30,8 @@ module Main(main) where
 				let (a_imprimir, estado_actual) = imprimir_cantidad_palabras ultimo_comando estado
 				putStr a_imprimir
 				
-				linea_leida <- getLine -- Lee el String de la entrada hasta el fin de linea
+				linea_cruda <- getLine
+				let linea_leida = borrar_espacios linea_cruda -- Lee el String de la entrada hasta el fin de linea
 				
 				let (_, _, modo_actual, buf_mod, _, _, _, _)	 	= estado_actual 
 				let comando_leido																= parse_string_entrada linea_leida
@@ -116,4 +117,9 @@ module Main(main) where
 		else 
 			do return ()
 
+	borrar_espacios :: String -> String
+	borrar_espacios [] = []
+	borrar_espacios (x:xs)
+		| x == ' ' 			= borrar_espacios xs
+		| otherwise 		= x : borrar_espacios xs
 

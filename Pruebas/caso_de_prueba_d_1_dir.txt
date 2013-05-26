@@ -1,0 +1,21 @@
+*Main> :main test.txt 
+40
+-2d
+,p
+Linea 1
+Linea 2
+Linea 4
+Linea 5
+$d
+p
+Linea 4
+,p
+Linea 1
+Linea 2
+Linea 4
+p
+Linea 4
+.d
+p
+Linea 2
+

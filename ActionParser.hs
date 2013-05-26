@@ -23,20 +23,20 @@ action_parser_cond _ []			= []
 
 char_into_action :: Char -> Action
 char_into_action x 
-	| x == 'a'	= Append
-	| x == 'c'	= Change
-	| x == 'd'	= Delete
-	| x == 'i'	= Insert
+	| x == 'a'	= Append -- Realizado y validado
+	| x == 'c'	= Change -- Realizado y validado
+	| x == 'd'	= Delete -- Realizado y validado
+	| x == 'i'	= Insert -- Realizado y validado
 	| x == 'j'	= Join
 	| x == 'm'	= Move
-	| x == 'n'	= Numerate
-	| x == 'p'	= Print
-	| x == 'q'	= Quit
-	| x == 'Q'	= QuitInconditional
+	| x == 'n'	= Numerate -- Realizado y validado 
+	| x == 'p'	= Print -- Realizado y validado
+	| x == 'q'	= Quit -- Realizado y validado
+	| x == 'Q'	= QuitInconditional -- Realizado y validado
 	| x == 't'	= T
 	| x == 'x'	= Cut
 	| x == 'y'	= Yank
-	| x == 'w'	= Write
+	| x == 'w'	= Write -- Realizado y validado
 	| otherwise	= Error
 
 

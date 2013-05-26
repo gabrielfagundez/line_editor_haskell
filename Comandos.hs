@@ -44,7 +44,7 @@ module Comandos where
 						`alt` comando_imprimir_con_dos_dir `alt` comando_mostrar_linea_con_dos_dir
 						`alt` comando_borrar_linea_con_direccion `alt` comando_borrar_actual
 						`alt` comando_borrar_con_dos_dir `alt` comando_change_con_dos_dir `alt` comando_change_con_direccion
-						`alt` comando_append_linea_actual
+						`alt` comando_append_linea_actual `alt` comando_show_actual
 
 
 	-- *** *** *** *** *** *** --
@@ -122,10 +122,14 @@ module Comandos where
 	ejecutar_comando_modo_insertar "." st 
 		| ult_com == 'i' 													= ("", (linea + aux - 1, insert linea papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0))
 		| ult_com == 'a'						 							= ("", (linea + aux, insert (linea+1) papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0))		
+		| ult_com == 'c'						 							= ("", (linea + aux - 1, insert linea papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0))		
+		| otherwise 															= error "Modo insertar con comando anterior no definido."--("", (linea + aux - 1, insert linea papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0))
 		where (linea, buf, _, esta_modificado, ult_com, nom_arch, papelera, aux) = st
 	ejecutar_comando_modo_insertar string st 
 		| ult_com == 'i' 		= ("", (linea, buf, modo, True, ult_com, nom_arch, nueva_papelera, aux + 1))
 		| ult_com == 'a' 		= ("", (linea, buf, modo, True, ult_com, nom_arch, nueva_papelera, aux + 1))
+		| ult_com == 'c' 		= ("", (linea, buf, modo, True, ult_com, nom_arch, nueva_papelera, aux + 1))
+		| otherwise 															= error "Modo insertar con comando anterior no definido."--("", (linea + aux - 1, insert linea papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0))
 		where 
 			(linea, buf, modo, esta_modificado, ult_com, nom_arch, papelera, aux) = st
 			nueva_linea = linea + 1
@@ -192,6 +196,10 @@ module Comandos where
 			Just (CWriteArg ruta) = comando
 
 	ejecutar_comando_print_current :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_print_current comando st 
+		| (length buf) == 0 	= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch, papelera, aux))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 	ejecutar_comando_print_current comando st = ((obtener_linea linea buf), (linea, buf, modo, esta_modificado, 'p', nom_arch, papelera, aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
@@ -213,6 +221,11 @@ module Comandos where
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 
 	ejecutar_comando_print_con_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_print_con_dir dir st  
+		| (length buf) == 0 = ("?\n" ,(length buf, buf, modo, esta_modificado, 'p', nom_arch, papelera, aux))
+		where 
+			(_, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+
 	ejecutar_comando_print_con_dir (Just (CPrint (Direc Ultima []))) st = 
 		(obtener_linea (length buf) buf ,(length buf, buf, modo, esta_modificado, 'p', nom_arch, papelera, aux))
 		where 
@@ -395,16 +408,17 @@ module Comandos where
 			maximo = length buf
 			offset = foldr (+) 0 off
 	ejecutar_comando_delete_con_dir (Just (CDelete (Direc (Rel a) off))) st =
-		borrar_linea (a + offset) st
+		borrar_linea (linea + a + offset) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset = foldr (+) 0 off
 
 	borrar_linea a st 
-		| a <= 0 				= ("?\n", (linea, buf, modo, esta_modificado, 'I', nom_arch, papelera, aux))
-		| a > maximo 		= ("?\n", (linea, buf, modo, esta_modificado, 'I', nom_arch, papelera, aux))
-		| otherwise			= ("", (a, borrar_linea_buf linea buf, modo, True, 'I', nom_arch, papelera, aux))
+		| a <= 0 				= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux))
+		| a > maximo 		= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux))
+		| a == maximo		= ("", (a - 1, borrar_linea_buf a buf, modo, True, 'd', nom_arch, papelera, aux))
+		| otherwise			= ("", (a, borrar_linea_buf a buf, modo, True, 'd', nom_arch, papelera, aux))
 		where  	
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -441,7 +455,8 @@ module Comandos where
 	borrar_linea_change a st 
 		| a <= 0 				= ("?\n", (linea, buf, modo, esta_modificado, 'I', nom_arch, papelera, aux))
 		| a > maximo 		= ("?\n", (linea, buf, modo, esta_modificado, 'I', nom_arch, papelera, aux))
-		| otherwise			= ("", (a, borrar_linea_change_buf linea buf, ModoInsertar, esta_modificado, 'c', nom_arch, papelera, aux))
+		| a == maximo 	= ("", (a - 1, borrar_linea_change_buf a buf, ModoInsertar, esta_modificado, 'c', nom_arch, papelera, aux))
+		| otherwise			= ("", (a, borrar_linea_change_buf a buf, ModoInsertar, esta_modificado, 'c', nom_arch, papelera, aux))
 		where  	
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -827,7 +842,9 @@ module Comandos where
 		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux))	
 		|	indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux))	
 		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux))	
-		| otherwise 							= ("", (indice1, borrar_lineas indice1 indice2 buf, modo, True, 'I', nom_arch, papelera, aux))
+		| (indice1 == indice2) && (indice1 == maximo) = ("", (maximo - 1, borrar_lineas indice1 indice2 buf, modo, True, 'd', nom_arch, papelera, aux))
+		| indice1 == indice2 			= ("", (maximo - 1, borrar_lineas indice1 indice2 buf, modo, True, 'd', nom_arch, papelera, aux))
+		| otherwise 							= ("", (indice1, borrar_lineas indice1 indice2 buf, modo, True, 'd', nom_arch, papelera, aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
