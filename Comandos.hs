@@ -9,7 +9,7 @@ module Comandos where
 	data Comando = 	CExitIncond | CExit | CInsertCurr | CWrite | CWriteArg Arg | CPrintCurr | Int |
 									CPrint Direc | CInsert Direc | CAppend Direc | CAppendCurr | CShow Direc | CShowCurr |
 									CPrintT Direc Direc |CShowT Direc Direc | CDelete Direc | CDeleteCurr | CDeleteT Direc Direc |
-									CChangeT Direc Direc | CChange Direc | CChangeCurr
+									CChangeT Direc Direc | CChange Direc | CChangeCurr | CYankCurr | CYankT Direc Direc | CYank Direc
 		deriving (Eq, Show)
 
 	data ConsoleState 	= ModoComando | ModoInsertar deriving (Eq, Ord, Show)
@@ -44,7 +44,8 @@ module Comandos where
 						`alt` comando_imprimir_con_dos_dir `alt` comando_mostrar_linea_con_dos_dir
 						`alt` comando_borrar_linea_con_direccion `alt` comando_borrar_actual
 						`alt` comando_borrar_con_dos_dir `alt` comando_change_con_dos_dir `alt` comando_change_con_direccion
-						`alt` comando_append_linea_actual `alt` comando_show_actual
+						`alt` comando_append_linea_actual `alt` comando_show_actual `alt` comando_copiar_actual
+						`alt` comando_yank_con_dos_dir `alt` comando_yank_con_direccion
 
 
 	-- *** *** *** *** *** *** --
@@ -81,7 +82,11 @@ module Comandos where
 	comando_change_actual :: Parse Char Comando
 	comando_change_actual = (action_parser_cond 'c') `build` const CChangeCurr
 
+	comando_copiar_actual :: Parse Char Comando
+	comando_copiar_actual = (action_parser_cond 'y') `build` const CYankCurr
+
 	
+
 	comando_imprimir_con_direccion :: Parse Char Comando
 	comando_imprimir_con_direccion = (directions_parser >*> (action_parser_cond 'p')) `build` \(dir, _) -> CPrint dir
 
@@ -100,6 +105,10 @@ module Comandos where
 	comando_change_con_direccion :: Parse Char Comando
 	comando_change_con_direccion = (directions_parser >*> (action_parser_cond 'c')) `build` \(dir, _) -> CChange dir
 
+	comando_yank_con_direccion :: Parse Char Comando
+	comando_yank_con_direccion = (directions_parser >*> (action_parser_cond 'y')) `build` \(dir, _) -> CYank dir
+
+
 
 	comando_imprimir_con_dos_dir :: Parse Char Comando
 	comando_imprimir_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'p')) `build` \(dir1,(_,(dir2, _))) -> CPrintT dir1 dir2
@@ -112,6 +121,10 @@ module Comandos where
 
 	comando_change_con_dos_dir :: Parse Char Comando
 	comando_change_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'c')) `build` \(dir1,(_,(dir2, _))) -> CChangeT dir1 dir2
+
+	comando_yank_con_dos_dir :: Parse Char Comando
+	comando_yank_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'y')) `build` \(dir1,(_,(dir2, _))) -> CYankT dir1 dir2
+
 
 	-- *** *** *** *** *** *** --
 	-- Ejecucion de los comandos
@@ -147,6 +160,7 @@ module Comandos where
 		| (comando == Just CDeleteCurr)													=	ejecutar_comando_delete_current comando st
 		| (comando == Just CShowCurr)														= ejecutar_comando_show_current comando st
 		| (comando == Just CChangeCurr)													= ejecutar_comando_change_current comando st
+		| (comando == Just CYankCurr)														= ejecutar_comando_yank_current comando st
 	
 	ejecutar_comando_modo_comando (Just (CWriteArg arg)) st 	= ejecutar_comando_write_con_ruta (Just (CWriteArg arg)) st
 	ejecutar_comando_modo_comando (Just (CPrint direc)) st 		= ejecutar_comando_print_con_dir (Just (CPrint direc)) st
@@ -155,11 +169,14 @@ module Comandos where
 	ejecutar_comando_modo_comando (Just (CShow direc)) st 		= ejecutar_comando_show_con_dir (Just (CShow direc)) st
 	ejecutar_comando_modo_comando (Just (CDelete direc)) st 	= ejecutar_comando_delete_con_dir (Just (CDelete direc)) st  
 	ejecutar_comando_modo_comando (Just (CChange direc)) st 	= ejecutar_comando_change_con_dir (Just (CChange direc)) st 
+	ejecutar_comando_modo_comando (Just (CYank direc)) st 		= ejecutar_comando_yank_con_dir (Just (CYank direc)) st 
 
 	ejecutar_comando_modo_comando (Just (CPrintT direc1 direc2)) st 		= ejecutar_comando_print_con_dos_dir (Just (CPrintT direc1 direc2)) st
  	ejecutar_comando_modo_comando (Just (CShowT direc1 direc2)) st 			= ejecutar_comando_show_con_dos_dir (Just (CShowT direc1 direc2)) st
  	ejecutar_comando_modo_comando (Just (CDeleteT direc1 direc2)) st 		= ejecutar_comando_delete_con_dos_dir (Just (CDeleteT direc1 direc2)) st
  	ejecutar_comando_modo_comando (Just (CChangeT direc1 direc2)) st 		= ejecutar_comando_change_con_dos_dir (Just (CChangeT direc1 direc2)) st
+ 	ejecutar_comando_modo_comando (Just (CYankT direc1 direc2)) st  		= ejecutar_comando_yank_con_dos_dir (Just (CYankT direc1 direc2)) st
+
 
 
 
@@ -219,6 +236,12 @@ module Comandos where
 	ejecutar_comando_change_current comando st = borrar_linea_change linea st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+
+	ejecutar_comando_yank_current :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_yank_current comando st = ("\n", (linea, buf, modo, esta_modificado, 'y', nom_arch, [(obtener_linea linea buf)], aux))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+
 
 	ejecutar_comando_print_con_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_print_con_dir dir st  
@@ -463,6 +486,32 @@ module Comandos where
 
 	borrar_linea_change_buf linea [] = []
 	borrar_linea_change_buf linea arr = take (linea-1) arr ++ drop linea arr
+
+	ejecutar_comando_yank_con_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_yank_con_dir (Just (CShow (Direc Ultima off))) st = 
+		ejecutar_comando_yank_automatico (maximo + offset) (maximo + offset) st
+		where 
+			(linea, buf, _, _, _, _, _, _) = st
+			maximo = length buf
+			offset = foldr (+) 0 off 
+	ejecutar_comando_yank_con_dir (Just (CShow (Direc Corriente off))) st =
+		ejecutar_comando_yank_automatico (linea + offset) (linea + offset) st
+		where 
+			(linea, buf, _, _, _, _, _, _) = st
+			maximo = length buf
+			offset = foldr (+) 0 off 
+	ejecutar_comando_yank_con_dir (Just (CShow (Direc (Abs a) off))) st =
+		ejecutar_comando_yank_automatico (a + offset) (a + offset) st
+		where 
+			(linea, buf, _, _, _, _, _, _) = st
+			maximo = length buf
+			offset = foldr (+) 0 off 
+	ejecutar_comando_yank_con_dir (Just (CShow (Direc (Rel a) off))) st =
+		ejecutar_comando_yank_automatico (linea + a + offset) (linea + a + offset) st
+		where 
+			(linea, buf, _, _, _, _, _, _) = st
+			maximo = length buf
+			offset = foldr (+) 0 off 
 
 	-- *** *** *** *** *** *** --
 	-- Ejecucion de comandos con dos direcciones
@@ -979,6 +1028,135 @@ module Comandos where
 	borrar_lineas :: Int -> Int -> [a] -> [a]
 	borrar_lineas indice1 indice2 buf = take (indice1-1) buf ++ drop indice2 buf
 
+	ejecutar_comando_yank_con_dos_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc Ultima off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_yank_automatico (maximo + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc Corriente off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_yank_automatico (linea + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc (Abs a) off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_yank_automatico (a + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc (Rel a) off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_yank_automatico (a + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc Corriente off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_yank_automatico (linea + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc Ultima off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_yank_automatico (maximo + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc (Abs a) off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_yank_automatico (a + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc (Rel a) off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_yank_automatico (a + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc Ultima off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_yank_automatico (maximo + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc (Rel a) off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_yank_automatico (a + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc Ultima off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_yank_automatico (maximo + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc (Abs a) off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_yank_automatico (a + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc Corriente off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_yank_automatico (linea + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc (Rel a) off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_yank_automatico (a + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc Corriente off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_yank_automatico (linea + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc (Abs a) off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_yank_automatico (a + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+
+	ejecutar_comando_yank_automatico :: Int -> Int -> State -> (String, State)
+	ejecutar_comando_yank_automatico indice1 indice2 st
+		| indice1 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'y', nom_arch, papelera, aux))	
+		| indice2 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'y', nom_arch, papelera, aux))	
+		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'y', nom_arch, papelera, aux))	
+		|	indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'y', nom_arch, papelera, aux))	
+		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 'y', nom_arch, papelera, aux))	
+		| otherwise					 			= ("", (linea, buf, modo, esta_modificado, 'y', nom_arch, obtener_lineas_yank indice1 indice2 buf, aux))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+
+	obtener_lineas_yank :: Int -> Int -> [String] -> [String]
+	obtener_lineas_yank a b [] = []
+	obtener_lineas_yank a b buf = drop a $ take b buf
 
 	-- *** *** *** *** *** *** --
 	-- Funciones auxiliares
