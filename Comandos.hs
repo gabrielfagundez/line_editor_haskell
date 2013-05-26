@@ -446,7 +446,6 @@ module Comandos where
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 
-
 	ejecutar_comando_append_con_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_append_con_dir (Just (CAppend (Direc Ultima off))) st = ejecutar_append_automatico (maximo + offset) st
 		where 
@@ -471,7 +470,7 @@ module Comandos where
 	ejecutar_comando_append_con_dir com st = ("?\n", st)
 
 	ejecutar_append_automatico :: Int -> State -> (String, State)
-	ejecutar_insert_automatico int st 
+	ejecutar_append_automatico int st 
 		| int > maximo 	= ("?\n", (linea, buf, modo, esta_modificado, 'a', nom_arch, papelera, aux))
 		| int < 0 			= ("?\n", (linea, buf, modo, esta_modificado, 'a', nom_arch, papelera, aux))
 		| int == 0 			= ("", (1, buf, ModoInsertar, esta_modificado, 'a', nom_arch, papelera, aux))
