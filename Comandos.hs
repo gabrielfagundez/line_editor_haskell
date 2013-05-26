@@ -10,7 +10,7 @@ module Comandos where
 									CPrint Direc | CInsert Direc | CAppend Direc | CAppendCurr | CShow Direc | CShowCurr |
 									CPrintT Direc Direc |CShowT Direc Direc | CDelete Direc | CDeleteCurr | CDeleteT Direc Direc |
 									CChangeT Direc Direc | CChange Direc | CChangeCurr | CYankCurr | CYankT Direc Direc | CYank Direc |
-									CPasteCurr | CPaste Direc | CChangeDir Direc
+									CPasteCurr | CPaste Direc | CChangeDir Direc | CEqual Direc
 		deriving (Eq, Show)
 
 	data ConsoleState 	= ModoComando | ModoInsertar deriving (Eq, Ord, Show)
@@ -47,7 +47,7 @@ module Comandos where
 						`alt` comando_borrar_con_dos_dir `alt` comando_change_con_dos_dir `alt` comando_change_con_direccion
 						`alt` comando_append_linea_actual `alt` comando_show_actual `alt` comando_copiar_actual
 						`alt` comando_yank_con_dos_dir `alt` comando_yank_con_direccion `alt` comando_pegar_actual
-						`alt` comando_pegar_con_dir `alt` comando_cambiar_direccion
+						`alt` comando_pegar_con_dir `alt` comando_cambiar_direccion `alt` comando_mostrar_numero_linea
  
 
 	-- *** *** *** *** *** *** --
@@ -118,6 +118,9 @@ module Comandos where
 	comando_cambiar_direccion :: Parse Char Comando
 	comando_cambiar_direccion = directions_parser `build` \dir -> CChangeDir dir 
 
+	comando_mostrar_numero_linea :: Parse Char Comando
+	comando_mostrar_numero_linea = (directions_parser >*> (action_parser_cond '=')) `build` \(dir, _) -> CEqual dir
+
 
 	comando_imprimir_con_dos_dir :: Parse Char Comando
 	comando_imprimir_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'p')) `build` \(dir1,(_,(dir2, _))) -> CPrintT dir1 dir2
@@ -182,6 +185,7 @@ module Comandos where
 	ejecutar_comando_modo_comando (Just (CYank direc)) st 			= ejecutar_comando_yank_con_dir (Just (CYank direc)) st 
 	ejecutar_comando_modo_comando (Just (CPaste direc)) st 			= ejecutar_comando_paste_con_dir (Just (CPaste direc)) st 
 	ejecutar_comando_modo_comando (Just (CChangeDir direc)) st 	= ejecutar_comando_change_dir (Just (CChangeDir direc)) st
+	ejecutar_comando_modo_comando (Just (CEqual direc)) st 			= ejecutar_comando_equal_con_dir (Just (CEqual direc)) st
 
 	ejecutar_comando_modo_comando (Just (CPrintT direc1 direc2)) st 		= ejecutar_comando_print_con_dos_dir (Just (CPrintT direc1 direc2)) st
  	ejecutar_comando_modo_comando (Just (CShowT direc1 direc2)) st 			= ejecutar_comando_show_con_dos_dir (Just (CShowT direc1 direc2)) st
@@ -290,11 +294,45 @@ module Comandos where
 	cambiar_linea indice st 
 		| indice > maximo 		= ("?\n" ,(linea, buf, modo, esta_modificado, 's', nom_arch, papelera, aux))
 		| indice <= 0					= ("?\n" ,(linea, buf, modo, esta_modificado, 's', nom_arch, papelera, aux))
-		| otherwise 					= ("\n" ,(indice, buf, modo, esta_modificado, 's', nom_arch, papelera, aux))
+		| otherwise 					= (obtener_linea indice buf ,(indice, buf, modo, esta_modificado, 's', nom_arch, papelera, aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 
+	ejecutar_comando_equal_con_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_equal_con_dir (Just (CChangeDir (Direc Ultima off))) st = 
+		cambiar_linea_equal (maximo + offset) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset = foldr (+) 0 off 
+	ejecutar_comando_equal_con_dir (Just (CChangeDir (Direc Corriente off))) st =
+		cambiar_linea_equal (linea + offset) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset = foldr (+) 0 off 
+	ejecutar_comando_equal_con_dir (Just (CChangeDir (Direc (Abs a) off))) st =
+		cambiar_linea_equal (a + offset) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset = foldr (+) 0 off 
+	ejecutar_comando_equal_con_dir (Just (CChangeDir (Direc (Rel a) off))) st =
+		cambiar_linea_equal (linea + a + offset) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset = foldr (+) 0 off 
+
+	cambiar_linea_equal :: Int -> State -> (String, State)
+	cambiar_linea_equal indice st 
+		| indice > maximo 		= ("?\n" ,(linea, buf, modo, esta_modificado, '=', nom_arch, papelera, aux))
+		| indice <= 0					= ("?\n" ,(linea, buf, modo, esta_modificado, '=', nom_arch, papelera, aux))
+		| otherwise 					= ((show indice) ++ "\n" ,(indice, buf, modo, esta_modificado, '=', nom_arch, papelera, aux))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
 
 	ejecutar_comando_print_con_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_print_con_dir dir st  

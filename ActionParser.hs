@@ -4,7 +4,7 @@ import Prelude
 import ParseLib
 
 -- El tipo de datos de Accion es un enumerado de acciones
-data Action = Append | Change | Delete | Insert | Join | Move | Numerate | Print | Quit | QuitInconditional | Cut | Yank | EqualSymbol | T | Write | Error
+data Action = Append | Change | Equal | Delete | Insert | Join | Move | Numerate | Print | Quit | QuitInconditional | Cut | Yank | EqualSymbol | T | Write | Error
 	deriving (Eq, Ord, Show, Read, Bounded, Enum)
 
 -- Parser de Acciones
@@ -34,9 +34,10 @@ char_into_action x
 	| x == 'q'	= Quit -- Realizado y validado
 	| x == 'Q'	= QuitInconditional -- Realizado y validado
 	| x == 't'	= T
-	| x == 'x'	= Cut
-	| x == 'y'	= Yank
+	| x == 'x'	= Cut -- Realizado
+	| x == 'y'	= Yank --Realizado
 	| x == 'w'	= Write -- Realizado y validado
+	| x == '=' 	= Equal
 	| otherwise	= Error
 
 
