@@ -448,27 +448,37 @@ module Comandos where
 
 
 	ejecutar_comando_append_con_dir :: Maybe Comando -> State -> (String, State)
-	ejecutar_comando_append_con_dir (Just (CAppend (Direc Ultima []))) st = ("" ,(length buf, buf, ModoInsertar, esta_modificado, 'a', nom_arch, papelera, aux))
+	ejecutar_comando_append_con_dir (Just (CAppend (Direc Ultima off))) st = ejecutar_append_automatico (maximo + offset) st
 		where 
+			maximo = length buf
 			(_, buf, _, esta_modificado, _, nom_arch, papelera, aux) = st
-	ejecutar_comando_append_con_dir (Just (CAppend (Direc Corriente []))) st = ("", (linea, buf, ModoInsertar, esta_modificado, 'a', nom_arch, papelera, aux))
+			offset = foldr (+) 0 off
+	ejecutar_comando_append_con_dir (Just (CAppend (Direc Corriente off))) st = ejecutar_append_automatico (linea + offset) st
 		where 
+			maximo = length buf
 			(linea, buf, _, esta_modificado, _, nom_arch, papelera, aux) = st
-	ejecutar_comando_append_con_dir (Just (CAppend (Direc (Abs a) []))) st 
-		| a > maximo								= ("?\n", (linea, buf, modo, esta_modificado, 'a', nom_arch, papelera, aux))
-		| otherwise 								= ("", (a, buf, ModoInsertar, esta_modificado, 'a', nom_arch, papelera, aux))
-		where  	
-			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			offset = foldr (+) 0 off
+	ejecutar_comando_append_con_dir (Just (CAppend (Direc (Abs a) off))) st = ejecutar_append_automatico (a + offset) st
+		where 
 			maximo = length buf
-	ejecutar_comando_append_con_dir (Just (CAppend (Direc (Rel a) []))) st 
-		| absoluta < 0 							= ("?\n", (linea, buf, modo, esta_modificado, 'a', nom_arch, papelera, aux))
-		| absoluta > maximo					= ("?\n", (linea, buf, modo, esta_modificado, 'a', nom_arch, papelera, aux))
-		| otherwise			 						= ("", (absoluta, buf, ModoInsertar, esta_modificado, 'a', nom_arch, papelera, aux))
+			(_, buf, _, esta_modificado, _, nom_arch, papelera, aux) = st
+			offset = foldr (+) 0 off
+	ejecutar_comando_append_con_dir (Just (CAppend (Direc (Rel a) off))) st = ejecutar_append_automatico (linea + a + offset) st
+		where 
+			maximo = length buf
+			(linea, buf, _, esta_modificado, _, nom_arch, papelera, aux) = st
+			offset = foldr (+) 0 off
+	ejecutar_comando_append_con_dir com st = ("?\n", st)
+
+	ejecutar_append_automatico :: Int -> State -> (String, State)
+	ejecutar_insert_automatico int st 
+		| int > maximo 	= ("?\n", (linea, buf, modo, esta_modificado, 'a', nom_arch, papelera, aux))
+		| int < 0 			= ("?\n", (linea, buf, modo, esta_modificado, 'a', nom_arch, papelera, aux))
+		| int == 0 			= ("", (1, buf, ModoInsertar, esta_modificado, 'a', nom_arch, papelera, aux))
+		| otherwise 		= ("", (int, buf, ModoInsertar, esta_modificado, 'a', nom_arch, papelera, aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
-			absoluta = linea + a
-	ejecutar_comando_append_con_dir com st = ("?\n", st)
 
 	ejecutar_comando_show_con_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_show_con_dir (Just (CShow (Direc Ultima []))) st = 
