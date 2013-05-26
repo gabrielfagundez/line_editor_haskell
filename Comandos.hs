@@ -92,7 +92,7 @@ module Comandos where
 	comando_pegar_actual = (action_parser_cond 'x') `build` const CPasteCurr
 
 	comando_mostrar_numer_linea_actual :: Parse Char Comando
-	comando_mostrar_numer_linea_actual = (action_parser_cond 'x') `build` const CEqualCurr
+	comando_mostrar_numer_linea_actual = (action_parser_cond '=') `build` const CEqualCurr
 	
 
 	comando_imprimir_con_direccion :: Parse Char Comando
@@ -273,8 +273,6 @@ module Comandos where
 		cambiar_linea_equal linea st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
-			maximo = length buf
-
 
 
 
@@ -1297,7 +1295,7 @@ module Comandos where
 
 	obtener_lineas_yank :: Int -> Int -> [String] -> [String]
 	obtener_lineas_yank a b [] = []
-	obtener_lineas_yank a b buf = drop a $ take b buf
+	obtener_lineas_yank a b buf = drop (a-1) $ take b buf
 
 	-- *** *** *** *** *** *** --
 	-- Funciones auxiliares
