@@ -10,7 +10,8 @@ module Comandos where
 									CPrint Direc | CInsert Direc | CAppend Direc | CAppendCurr | CShow Direc | CShowCurr |
 									CPrintT Direc Direc |CShowT Direc Direc | CDelete Direc | CDeleteCurr | CDeleteT Direc Direc |
 									CChangeT Direc Direc | CChange Direc | CChangeCurr | CYankCurr | CYankT Direc Direc | CYank Direc |
-									CPasteCurr | CPaste Direc | CChangeDir Direc | CEqual Direc | CEqualCurr
+									CPasteCurr | CPaste Direc | CChangeDir Direc | CEqual Direc | CEqualCurr | CMoveT Direc Direc Direc | 
+									CTransferT Direc Direc Direc
 		deriving (Eq, Show)
 
 	data ConsoleState 	= ModoComando | ModoInsertar deriving (Eq, Ord, Show)
@@ -47,8 +48,8 @@ module Comandos where
 						`alt` comando_borrar_con_dos_dir `alt` comando_change_con_dos_dir `alt` comando_change_con_direccion
 						`alt` comando_append_linea_actual `alt` comando_show_actual `alt` comando_copiar_actual
 						`alt` comando_yank_con_dos_dir `alt` comando_yank_con_direccion `alt` comando_pegar_actual
-						`alt` comando_pegar_con_dir `alt` comando_cambiar_direccion `alt` comando_mostrar_numero_linea
-						`alt` comando_mostrar_numer_linea_actual
+						`alt` comando_pegar_con_dir `alt` comando_mostrar_numero_linea
+						`alt` comando_mostrar_numer_linea_actual `alt` comando_mover_con_dos_dir `alt` comando_transferir_con_dos_dir
  
 
 	-- *** *** *** *** *** *** --
@@ -125,7 +126,6 @@ module Comandos where
 	comando_mostrar_numero_linea :: Parse Char Comando
 	comando_mostrar_numero_linea = (directions_parser >*> (action_parser_cond '=')) `build` \(dir, _) -> CEqual dir
 
-
 	comando_imprimir_con_dos_dir :: Parse Char Comando
 	comando_imprimir_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'p')) `build` \(dir1,(_,(dir2, _))) -> CPrintT dir1 dir2
 
@@ -141,6 +141,11 @@ module Comandos where
 	comando_yank_con_dos_dir :: Parse Char Comando
 	comando_yank_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'y')) `build` \(dir1,(_,(dir2, _))) -> CYankT dir1 dir2
 
+	comando_mover_con_dos_dir :: Parse Char Comando
+	comando_mover_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'm') >*> directions_parser) `build` \(dir1,(_,(dir2,(_, dir3)))) -> CMoveT dir1 dir2 dir3
+	
+	comando_transferir_con_dos_dir :: Parse Char Comando
+	comando_transferir_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 't') >*> directions_parser) `build` \(dir1,(_,(dir2,(_, dir3)))) -> CTransferT dir1 dir2 dir3
 
 	-- *** *** *** *** *** *** --
 	-- Ejecucion de los comandos
@@ -197,9 +202,6 @@ module Comandos where
  	ejecutar_comando_modo_comando (Just (CDeleteT direc1 direc2)) st 		= ejecutar_comando_delete_con_dos_dir (Just (CDeleteT direc1 direc2)) st
  	ejecutar_comando_modo_comando (Just (CChangeT direc1 direc2)) st 		= ejecutar_comando_change_con_dos_dir (Just (CChangeT direc1 direc2)) st
  	ejecutar_comando_modo_comando (Just (CYankT direc1 direc2)) st  		= ejecutar_comando_yank_con_dos_dir (Just (CYankT direc1 direc2)) st
-
-
-
 
 	-- *** *** *** *** *** *** --
 	-- Ejecucion de los comandos especificos con una o ninguna direccion
@@ -259,12 +261,12 @@ module Comandos where
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 
 	ejecutar_comando_yank_current :: Maybe Comando -> State -> (String, State)
-	ejecutar_comando_yank_current comando st = ("\n", (linea, buf, modo, esta_modificado, 'y', nom_arch, [(obtener_linea linea buf)], aux))
+	ejecutar_comando_yank_current comando st = ("", (linea, buf, modo, esta_modificado, 'y', nom_arch, [(obtener_linea_sin_salto linea buf)], aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 
 	ejecutar_comando_paste_current :: Maybe Comando -> State -> (String, State)
-	ejecutar_comando_paste_current comando st = ("\n", (linea + length papelera, paste papelera linea buf, modo, True, 'x', nom_arch, [], aux))
+	ejecutar_comando_paste_current comando st = ("", (linea + length papelera, paste papelera linea buf, modo, True, 'x', nom_arch, [], aux))
 		where 
 			(linea, buf, modo, _, _, nom_arch, papelera, aux) = st
 
@@ -412,27 +414,38 @@ module Comandos where
 			offset = foldr (+) 0 off 
 
 	ejecutar_comando_insert_con_dir :: Maybe Comando -> State -> (String, State)
-	ejecutar_comando_insert_con_dir (Just (CInsert (Direc Ultima []))) st = ("" ,(length buf, buf, ModoInsertar, esta_modificado, 'i', nom_arch, papelera, aux))
+	ejecutar_comando_insert_con_dir (Just (CInsert (Direc Ultima off))) st = ejecutar_insert_automatico (maximo + offset) st
 		where 
+			maximo = length buf
 			(_, buf, _, esta_modificado, _, nom_arch, papelera, aux) = st
-	ejecutar_comando_insert_con_dir (Just (CInsert (Direc Corriente []))) st = ("", (linea, buf, ModoInsertar, esta_modificado, 'i', nom_arch, papelera, aux))
+			offset = foldr (+) 0 off
+	ejecutar_comando_insert_con_dir (Just (CInsert (Direc Corriente off))) st = ejecutar_insert_automatico (linea + offset) st
 		where 
+			maximo = length buf
 			(linea, buf, _, esta_modificado, _, nom_arch, papelera, aux) = st
-	ejecutar_comando_insert_con_dir (Just (CInsert (Direc (Abs a) []))) st 
-		| a > maximo								= ("?\n", (linea, buf, modo, esta_modificado, 'i', nom_arch, papelera, aux))
-		| otherwise 								= ("", (a, buf, ModoInsertar, esta_modificado, 'i', nom_arch, papelera, aux))
-		where  	
-			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			offset = foldr (+) 0 off
+	ejecutar_comando_insert_con_dir (Just (CInsert (Direc (Abs a) off))) st = ejecutar_insert_automatico (a + offset) st
+		where 
 			maximo = length buf
-	ejecutar_comando_insert_con_dir (Just (CInsert (Direc (Rel a) []))) st 
-		| absoluta < 0 							= ("?\n", (linea, buf, modo, esta_modificado, 'i', nom_arch, papelera, aux))
-		| absoluta > maximo					= ("?\n", (linea, buf, modo, esta_modificado, 'i', nom_arch, papelera, aux))
-		| otherwise			 						= ("", (absoluta, buf, ModoInsertar, esta_modificado, 'i', nom_arch, papelera, aux))
+			(_, buf, _, esta_modificado, _, nom_arch, papelera, aux) = st
+			offset = foldr (+) 0 off
+	ejecutar_comando_insert_con_dir (Just (CInsert (Direc (Rel a) off))) st = ejecutar_insert_automatico (linea + a + offset) st
+		where 
+			maximo = length buf
+			(linea, buf, _, esta_modificado, _, nom_arch, papelera, aux) = st
+			offset = foldr (+) 0 off
+	ejecutar_comando_insert_con_dir com st = ("?\n", st)
+
+	ejecutar_insert_automatico :: Int -> State -> (String, State)
+	ejecutar_insert_automatico int st 
+		| int > maximo 	= ("?\n", (linea, buf, modo, esta_modificado, 'i', nom_arch, papelera, aux))
+		| int < 0 			= ("?\n", (linea, buf, modo, esta_modificado, 'i', nom_arch, papelera, aux))
+		| int == 0 			= ("", (1, buf, ModoInsertar, esta_modificado, 'i', nom_arch, papelera, aux))
+		| otherwise 		= ("", (int, buf, ModoInsertar, esta_modificado, 'i', nom_arch, papelera, aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
-			absoluta = linea + a
-	ejecutar_comando_insert_con_dir com st = ("?\n", st)
+
 
 	ejecutar_comando_append_con_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_append_con_dir (Just (CAppend (Direc Ultima []))) st = ("" ,(length buf, buf, ModoInsertar, esta_modificado, 'a', nom_arch, papelera, aux))
@@ -515,6 +528,11 @@ module Comandos where
 			offset = foldr (+) 0 off 
 
 	ejecutar_comando_delete_con_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_delete_con_dir (Just (CDelete (Direc Todo off))) st = 
+		ejecutar_comando_delete_automatico 1 maximo st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
 	ejecutar_comando_delete_con_dir (Just (CDelete (Direc Ultima off))) st =
 		borrar_linea (maximo + offset) st
 		where 
@@ -553,6 +571,11 @@ module Comandos where
 	borrar_linea_buf linea arr = take (linea-1) arr ++ drop linea arr
 
 	ejecutar_comando_change_con_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_change_con_dir (Just (CChange (Direc Todo off))) st =
+		ejecutar_comando_change_automatico 1 maximo st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
 	ejecutar_comando_change_con_dir (Just (CChange (Direc Ultima off))) st =
 		borrar_linea_change (maximo + offset) st
 		where 
@@ -572,16 +595,16 @@ module Comandos where
 			maximo = length buf
 			offset = foldr (+) 0 off
 	ejecutar_comando_change_con_dir (Just (CChange (Direc (Rel a) off))) st =
-		borrar_linea_change (a + offset) st
+		borrar_linea_change (linea + a + offset) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset = foldr (+) 0 off
 
 	borrar_linea_change a st 
-		| a <= 0 				= ("?\n", (linea, buf, modo, esta_modificado, 'I', nom_arch, papelera, aux))
-		| a > maximo 		= ("?\n", (linea, buf, modo, esta_modificado, 'I', nom_arch, papelera, aux))
-		| a == maximo 	= ("", (a - 1, borrar_linea_change_buf a buf, ModoInsertar, esta_modificado, 'c', nom_arch, papelera, aux))
+		| a <= 0 				= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux))
+		| a > maximo 		= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux))
+		| a == maximo 	= ("", (a, borrar_linea_change_buf a buf, ModoInsertar, esta_modificado, 'c', nom_arch, papelera, aux))
 		| otherwise			= ("", (a, borrar_linea_change_buf a buf, ModoInsertar, esta_modificado, 'c', nom_arch, papelera, aux))
 		where  	
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
@@ -591,6 +614,11 @@ module Comandos where
 	borrar_linea_change_buf linea arr = take (linea-1) arr ++ drop linea arr
 
 	ejecutar_comando_yank_con_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_yank_con_dir (Just (CYank (Direc Todo off))) st = 
+		ejecutar_comando_yank_automatico 1 maximo st
+		where 
+			(linea, buf, _, _, _, _, _, _) = st
+			maximo = length buf
 	ejecutar_comando_yank_con_dir (Just (CYank (Direc Ultima off))) st = 
 		ejecutar_comando_yank_automatico (maximo + offset) (maximo + offset) st
 		where 
@@ -646,7 +674,7 @@ module Comandos where
 	ejecutar_comando_paste_automatico indice st 
 		| indice > maximo 								= ("?\n", (linea, buf, modo, esta_modificado, 'x', nom_arch, papelera, aux))
 		| indice < 0 											= ("?\n", (linea, buf, modo, esta_modificado, 'x', nom_arch, papelera, aux))
-		|	otherwise 											= ("\n", (indice + length papelera, paste papelera indice buf, modo, True, 'x', nom_arch, [], aux))
+		|	otherwise 											= ("", (indice + length papelera, paste papelera indice buf, modo, True, 'x', nom_arch, [], aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1326,6 +1354,9 @@ module Comandos where
 
 	obtener_linea :: Int -> [String] -> String
 	obtener_linea linea buf = (buf !! (linea - 1)) ++ ['\n']
+
+	obtener_linea_sin_salto :: Int -> [String] -> String
+	obtener_linea_sin_salto linea buf = (buf !! (linea - 1))
 
 	compactar :: [String] -> String
 	compactar = unlines

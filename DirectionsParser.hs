@@ -19,6 +19,7 @@ module DirectionsParser where
 	-- Parser de direcciones
 	-- *** *** *** *** *** *** --
 
+	directions_parser :: Parse Char Direc
 	directions_parser st
 		| list == [] 		= []
 		| otherwise			= [last list]
