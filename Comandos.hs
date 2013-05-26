@@ -10,7 +10,7 @@ module Comandos where
 									CPrint Direc | CInsert Direc | CAppend Direc | CAppendCurr | CShow Direc | CShowCurr |
 									CPrintT Direc Direc |CShowT Direc Direc | CDelete Direc | CDeleteCurr | CDeleteT Direc Direc |
 									CChangeT Direc Direc | CChange Direc | CChangeCurr | CYankCurr | CYankT Direc Direc | CYank Direc |
-									CPasteCurr | CPaste Direc | CChangeDir Direc | CEqual Direc
+									CPasteCurr | CPaste Direc | CChangeDir Direc | CEqual Direc | CEqualCurr
 		deriving (Eq, Show)
 
 	data ConsoleState 	= ModoComando | ModoInsertar deriving (Eq, Ord, Show)
@@ -48,6 +48,7 @@ module Comandos where
 						`alt` comando_append_linea_actual `alt` comando_show_actual `alt` comando_copiar_actual
 						`alt` comando_yank_con_dos_dir `alt` comando_yank_con_direccion `alt` comando_pegar_actual
 						`alt` comando_pegar_con_dir `alt` comando_cambiar_direccion `alt` comando_mostrar_numero_linea
+						`alt` comando_mostrar_numer_linea_actual
  
 
 	-- *** *** *** *** *** *** --
@@ -89,6 +90,9 @@ module Comandos where
 
 	comando_pegar_actual :: Parse Char Comando
 	comando_pegar_actual = (action_parser_cond 'x') `build` const CPasteCurr
+
+	comando_mostrar_numer_linea_actual :: Parse Char Comando
+	comando_mostrar_numer_linea_actual = (action_parser_cond 'x') `build` const CEqualCurr
 	
 
 	comando_imprimir_con_direccion :: Parse Char Comando
@@ -174,6 +178,7 @@ module Comandos where
 		| (comando == Just CChangeCurr)														= ejecutar_comando_change_current comando st
 		| (comando == Just CYankCurr)															= ejecutar_comando_yank_current comando st
 		| (comando == Just CPasteCurr)														= ejecutar_comando_paste_current comando st
+		| (comando == Just CEqualCurr)														= ejecutar_comando_equal_actual comando st
 	
 	ejecutar_comando_modo_comando (Just (CWriteArg arg)) st 		= ejecutar_comando_write_con_ruta (Just (CWriteArg arg)) st
 	ejecutar_comando_modo_comando (Just (CPrint direc)) st 			= ejecutar_comando_print_con_dir (Just (CPrint direc)) st
@@ -263,6 +268,15 @@ module Comandos where
 		where 
 			(linea, buf, modo, _, _, nom_arch, papelera, aux) = st
 
+	ejecutar_comando_equal_actual :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_equal_actual comando st =
+		cambiar_linea_equal linea st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+
+
+
 
 	ejecutar_comando_change_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_change_dir (Just (CChangeDir (Direc Ultima off))) st = 
@@ -300,25 +314,25 @@ module Comandos where
 			maximo = length buf
 
 	ejecutar_comando_equal_con_dir :: Maybe Comando -> State -> (String, State)
-	ejecutar_comando_equal_con_dir (Just (CChangeDir (Direc Ultima off))) st = 
+	ejecutar_comando_equal_con_dir (Just (CEqual (Direc Ultima off))) st = 
 		cambiar_linea_equal (maximo + offset) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset = foldr (+) 0 off 
-	ejecutar_comando_equal_con_dir (Just (CChangeDir (Direc Corriente off))) st =
+	ejecutar_comando_equal_con_dir (Just (CEqual (Direc Corriente off))) st =
 		cambiar_linea_equal (linea + offset) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset = foldr (+) 0 off 
-	ejecutar_comando_equal_con_dir (Just (CChangeDir (Direc (Abs a) off))) st =
+	ejecutar_comando_equal_con_dir (Just (CEqual (Direc (Abs a) off))) st =
 		cambiar_linea_equal (a + offset) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset = foldr (+) 0 off 
-	ejecutar_comando_equal_con_dir (Just (CChangeDir (Direc (Rel a) off))) st =
+	ejecutar_comando_equal_con_dir (Just (CEqual (Direc (Rel a) off))) st =
 		cambiar_linea_equal (linea + a + offset) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st

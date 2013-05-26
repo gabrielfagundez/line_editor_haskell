@@ -12,6 +12,7 @@ module DirectionsParser where
 						| Corriente
 						| Rel Int
 						| Todo
+						| TdoRelativo
 		deriving (Eq, Show)
 
 	-- *** *** *** *** *** *** --
@@ -41,6 +42,13 @@ module DirectionsParser where
 	parse_todo (x:xs) 
 		| x == ',' 			= [(Todo, xs)]
 		| otherwise 		= []
+
+	parse_todo_relativo :: Parse Char Base
+	parse_todo_relativo "" = []
+	parse_todo_relativo (x:xs) 
+		| x == ';' 			= [(Todo, xs)]
+		| otherwise 		= []
+
 
 	parse_ultima :: Parse Char Base
 	parse_ultima "" = []
