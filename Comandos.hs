@@ -473,7 +473,7 @@ module Comandos where
 	ejecutar_append_automatico int st 
 		| int > maximo 	= ("?\n", (linea, buf, modo, esta_modificado, 'a', nom_arch, papelera, aux))
 		| int < 0 			= ("?\n", (linea, buf, modo, esta_modificado, 'a', nom_arch, papelera, aux))
-		| int == 0 			= ("", (1, buf, ModoInsertar, esta_modificado, 'a', nom_arch, papelera, aux))
+		| int == 0 			= ("", (0, buf, ModoInsertar, esta_modificado, 'a', nom_arch, papelera, aux))
 		| otherwise 		= ("", (int, buf, ModoInsertar, esta_modificado, 'a', nom_arch, papelera, aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
