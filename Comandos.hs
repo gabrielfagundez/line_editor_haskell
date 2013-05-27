@@ -5,7 +5,6 @@ module Comandos where
 	import DirectionsParser
 	import ParseLib
 
-	-- Definir Data Comando = ...
 	data Comando = 	CExitIncond | CExit | CInsertCurr | CWrite | CWriteArg Arg | CPrintCurr | Int |
 									CPrint Direc | CInsert Direc | CAppend Direc | CAppendCurr | CShow Direc | CShowCurr |
 									CPrintT Direc Direc |CShowT Direc Direc | CDelete Direc | CDeleteCurr | CDeleteT Direc Direc |
@@ -22,7 +21,6 @@ module Comandos where
 	-- El estado del sistema se ve reflejado en esta terna
 	type State					= (LineaActual, Buffer, ConsoleState, Bool, UltimoComando, String, [String], Int)
 	
-
 
 	-- *** *** *** *** *** *** --
 	-- Funcion que parsea la entrada estandar recibida en el Main
@@ -50,6 +48,7 @@ module Comandos where
 						`alt` comando_yank_con_dos_dir `alt` comando_yank_con_direccion `alt` comando_pegar_actual
 						`alt` comando_pegar_con_dir `alt` comando_mostrar_numero_linea
 						`alt` comando_mostrar_numer_linea_actual `alt` comando_mover_con_dos_dir `alt` comando_transferir_con_dos_dir
+						`alt` comando_change_actual
  
 
 	-- *** *** *** *** *** *** --
@@ -203,6 +202,10 @@ module Comandos where
  	ejecutar_comando_modo_comando (Just (CChangeT direc1 direc2)) st 		= ejecutar_comando_change_con_dos_dir (Just (CChangeT direc1 direc2)) st
  	ejecutar_comando_modo_comando (Just (CYankT direc1 direc2)) st  		= ejecutar_comando_yank_con_dos_dir (Just (CYankT direc1 direc2)) st
 
+ 	ejecutar_comando_modo_comando (Just (CMoveT direc1 direc2 direc3)) st  			= ejecutar_comando_move_con_dos_dir (Just (CMoveT direc1 direc2 direc3)) st
+ 	ejecutar_comando_modo_comando (Just (CTransferT direc1 direc2 direc3)) st  	= ejecutar_comando_transfer_con_dos_dir (Just (CTransferT direc1 direc2 direc3)) st
+
+
 	-- *** *** *** *** *** *** --
 	-- Ejecucion de los comandos especificos con una o ninguna direccion
 	-- *** *** *** *** *** *** --
@@ -343,7 +346,7 @@ module Comandos where
 	cambiar_linea_equal indice st 
 		| indice > maximo 		= ("?\n" ,(linea, buf, modo, esta_modificado, '=', nom_arch, papelera, aux))
 		| indice <= 0					= ("?\n" ,(linea, buf, modo, esta_modificado, '=', nom_arch, papelera, aux))
-		| otherwise 					= ((show indice) ++ "\n" ,(indice, buf, modo, esta_modificado, '=', nom_arch, papelera, aux))
+		| otherwise 					= ((show indice) ++ "\n" ,(linea, buf, modo, esta_modificado, '=', nom_arch, papelera, aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -812,7 +815,7 @@ module Comandos where
 		| indice1 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch, papelera, aux))	
 		| indice2 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch, papelera, aux))	
 		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch, papelera, aux))	
-		|	indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch, papelera, aux))	
+		|	indice2 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch, papelera, aux))	
 		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch, papelera, aux))	
 		| otherwise 							= (obtener_lineas_con_tabulador_e_indice indice1 indice2 buf, (indice2, buf, modo, esta_modificado, 'n', nom_arch, papelera, aux))
 		where 
@@ -939,7 +942,7 @@ module Comandos where
 		| indice1 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch, papelera, aux))	
 		| indice2 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch, papelera, aux))	
 		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch, papelera, aux))	
-		|	indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch, papelera, aux))	
+		|	indice2 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch, papelera, aux))	
 		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch, papelera, aux))	
 		| otherwise 							= (obtener_lineas indice1 indice2 buf, (indice2, buf, modo, esta_modificado, 'p', nom_arch, papelera, aux))
 		where 
@@ -1065,7 +1068,7 @@ module Comandos where
 		| indice1 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux))	
 		| indice2 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux))	
 		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux))	
-		|	indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux))	
+		|	indice2 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux))	
 		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux))	
 		| (indice1 == indice2) && (indice1 == maximo) = ("", (maximo - 1, borrar_lineas indice1 indice2 buf, modo, True, 'd', nom_arch, papelera, aux))
 		| indice1 == indice2 			= ("", (maximo - 1, borrar_lineas indice1 indice2 buf, modo, True, 'd', nom_arch, papelera, aux))
@@ -1193,7 +1196,7 @@ module Comandos where
 		| indice1 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux))	
 		| indice2 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux))	
 		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux))	
-		|	indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux))	
+		|	indice2 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux))	
 		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux))	
 		| otherwise 							= ("", (indice1, borrar_lineas indice1 indice2 buf, ModoInsertar, True, 'c', nom_arch, papelera, aux))
 		where 
@@ -1323,7 +1326,7 @@ module Comandos where
 		| indice1 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'y', nom_arch, papelera, aux))	
 		| indice2 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'y', nom_arch, papelera, aux))	
 		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'y', nom_arch, papelera, aux))	
-		|	indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'y', nom_arch, papelera, aux))	
+		|	indice2 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'y', nom_arch, papelera, aux))	
 		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 'y', nom_arch, papelera, aux))	
 		| otherwise					 			= ("", (linea, buf, modo, esta_modificado, 'y', nom_arch, obtener_lineas_yank indice1 indice2 buf, aux))
 		where 
@@ -1333,6 +1336,352 @@ module Comandos where
 	obtener_lineas_yank :: Int -> Int -> [String] -> [String]
 	obtener_lineas_yank a b [] = []
 	obtener_lineas_yank a b buf = drop (a-1) $ take b buf
+
+
+	ejecutar_comando_move_con_dos_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc Ultima off1) (Direc Ultima off2) dir3)) st = 
+		ejecutar_comando_move_automatico (maximo + offset1) (maximo + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc Corriente off1) (Direc Corriente off2) dir3)) st = 
+		ejecutar_comando_move_automatico (linea + offset1) (linea + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc (Abs a) off1) (Direc (Abs b) off2) dir3)) st = 
+		ejecutar_comando_move_automatico (a + offset1) (b + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc (Rel a) off1) (Direc (Rel b) off2) dir3)) st = 
+		ejecutar_comando_move_automatico (a + offset1) (b + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc Corriente off1) (Direc Ultima off2) dir3)) st = 
+		ejecutar_comando_move_automatico (linea + offset1) (maximo + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc Ultima off1) (Direc Corriente off2) dir3)) st = 
+		ejecutar_comando_move_automatico (maximo + offset1) (linea + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc (Abs a) off1) (Direc (Rel b) off2) dir3)) st = 
+		ejecutar_comando_move_automatico (a + offset1) (b + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc (Rel a) off1) (Direc (Abs b) off2) dir3)) st = 
+		ejecutar_comando_move_automatico (a + offset1) (b + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc Ultima off1) (Direc (Rel b) off2) dir3)) st = 
+		ejecutar_comando_move_automatico (maximo + offset1) (b + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc (Rel a) off1) (Direc Ultima off2) dir3)) st = 
+		ejecutar_comando_move_automatico (a + offset1) (maximo + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc Ultima off1) (Direc (Abs b) off2) dir3)) st = 
+		ejecutar_comando_move_automatico (maximo + offset1) (b + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc (Abs a) off1) (Direc Ultima off2) dir3)) st = 
+		ejecutar_comando_move_automatico (a + offset1) (maximo + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc Corriente off1) (Direc (Rel b) off2) dir3)) st = 
+		ejecutar_comando_move_automatico (linea + offset1) (b + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc (Rel a) off1) (Direc Corriente off2) dir3)) st = 
+		ejecutar_comando_move_automatico (a + offset1) (linea + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc Corriente off1) (Direc (Abs b) off2) dir3)) st = 
+		ejecutar_comando_move_automatico (linea + offset1) (b + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc (Abs a) off1) (Direc Corriente off2) dir3)) st = 
+		ejecutar_comando_move_automatico (a + offset1) (linea + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+
+	ejecutar_comando_move_automatico :: Int -> Int -> State -> Direc -> (String, State)
+	ejecutar_comando_move_automatico indice1 indice2 st dir3
+		| indice1 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'm', nom_arch, papelera, aux))	
+		| indice2 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'm', nom_arch, papelera, aux))	
+		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'm', nom_arch, papelera, aux))	
+		|	indice2 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'm', nom_arch, papelera, aux))	
+		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 'm', nom_arch, papelera, aux))	
+		| otherwise 							= mover_auxiliar indice1 indice2 st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+
+	mover_auxiliar :: Int -> Int -> State -> Direc -> (String, State)
+	mover_auxiliar indice1 indice2 st (Direc Ultima off) = 
+		mover_lineas_auxiliar indice1 indice2 st (maximo + offset)
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset = foldr (+) 0 off
+	mover_auxiliar indice1 indice2 st (Direc Corriente off) = 
+		mover_lineas_auxiliar indice1 indice2 st (linea + offset)
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset = foldr (+) 0 off
+	mover_auxiliar indice1 indice2 st (Direc (Abs a) off) = 
+		mover_lineas_auxiliar indice1 indice2 st (a + offset)
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset = foldr (+) 0 off
+	mover_auxiliar indice1 indice2 st (Direc (Rel a) off) = 
+		mover_lineas_auxiliar indice1 indice2 st (linea + a + offset)
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset = foldr (+) 0 off
+
+	mover_lineas_auxiliar :: Int -> Int -> State -> Int -> (String, State)
+	mover_lineas_auxiliar indice1 indice2 st indice3
+		| indice3 > maximo 			= ("?\n", (linea, buf, modo, esta_modificado, 'm', nom_arch, papelera, aux))	
+		| indice3 < 0						= ("?\n", (linea, buf, modo, esta_modificado, 'm', nom_arch, papelera, aux))
+		| indice3 >= indice1 && indice3 < indice2 = ("?\n", (linea, buf, modo, esta_modificado, 'm', nom_arch, papelera, aux))
+		| otherwise							= ("", (nueva_linea indice1 indice2 indice3, mover_en_buffer indice1 indice2 buf indice3, modo, True, 'm', nom_arch, papelera, aux))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+
+	mover_en_buffer :: Int -> Int -> [String] -> Int -> [String]
+	mover_en_buffer indice1 indice2 buf indice3 
+		| indice3 < indice1  	= (take indice3 sin_elementos) ++ a_mover ++ (drop indice3 sin_elementos)
+		| indice3 >= indice2 	= take (indice1 - 1) asd ++ (drop indice2 asd) 
+		where 
+			sin_elementos = (take (indice1 - 1) buf) ++ (drop indice2 buf)
+			a_mover = (drop (indice1 - 1) (take indice2 buf))
+			asd = (take indice3 buf) ++ a_mover ++ (drop indice3 buf)
+			nuevo_indice = indice3 - (length a_mover)
+
+	nueva_linea :: Int -> Int -> Int -> Int
+	nueva_linea i1 i2 i3 
+		| i3 < i1 	= i3 + i2 - i1
+		| i3 >= i2 	= i3 
+
+	ejecutar_comando_transfer_con_dos_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc Ultima off1) (Direc Ultima off2) dir3)) st = 
+		ejecutar_comando_transfer_automatico (maximo + offset1) (maximo + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc Corriente off1) (Direc Corriente off2) dir3)) st = 
+		ejecutar_comando_transfer_automatico (linea + offset1) (linea + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc (Abs a) off1) (Direc (Abs b) off2) dir3)) st = 
+		ejecutar_comando_transfer_automatico (a + offset1) (b + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc (Rel a) off1) (Direc (Rel b) off2) dir3)) st = 
+		ejecutar_comando_transfer_automatico (a + offset1) (b + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc Corriente off1) (Direc Ultima off2) dir3)) st = 
+		ejecutar_comando_transfer_automatico (linea + offset1) (maximo + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc Ultima off1) (Direc Corriente off2) dir3)) st = 
+		ejecutar_comando_transfer_automatico (maximo + offset1) (linea + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc (Abs a) off1) (Direc (Rel b) off2) dir3)) st = 
+		ejecutar_comando_transfer_automatico (a + offset1) (b + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc (Rel a) off1) (Direc (Abs b) off2) dir3)) st = 
+		ejecutar_comando_transfer_automatico (a + offset1) (b + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc Ultima off1) (Direc (Rel b) off2) dir3)) st = 
+		ejecutar_comando_transfer_automatico (maximo + offset1) (b + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc (Rel a) off1) (Direc Ultima off2) dir3)) st = 
+		ejecutar_comando_transfer_automatico (a + offset1) (maximo + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc Ultima off1) (Direc (Abs b) off2) dir3)) st = 
+		ejecutar_comando_transfer_automatico (maximo + offset1) (b + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc (Abs a) off1) (Direc Ultima off2) dir3)) st = 
+		ejecutar_comando_transfer_automatico (a + offset1) (maximo + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc Corriente off1) (Direc (Rel b) off2) dir3)) st = 
+		ejecutar_comando_transfer_automatico (linea + offset1) (b + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc (Rel a) off1) (Direc Corriente off2) dir3)) st = 
+		ejecutar_comando_transfer_automatico (a + offset1) (linea + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc Corriente off1) (Direc (Abs b) off2) dir3)) st = 
+		ejecutar_comando_transfer_automatico (linea + offset1) (b + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc (Abs a) off1) (Direc Corriente off2) dir3)) st = 
+		ejecutar_comando_transfer_automatico (a + offset1) (linea + offset2) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+
+	ejecutar_comando_transfer_automatico :: Int -> Int -> State -> Direc -> (String, State)
+	ejecutar_comando_transfer_automatico indice1 indice2 st dir3
+		| indice1 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 't', nom_arch, papelera, aux))	
+		| indice2 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 't', nom_arch, papelera, aux))	
+		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 't', nom_arch, papelera, aux))	
+		|	indice2 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 't', nom_arch, papelera, aux))	
+		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 't', nom_arch, papelera, aux))	
+		| otherwise 							= transfer_auxiliar indice1 indice2 st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+
+	transfer_auxiliar :: Int -> Int -> State -> Direc -> (String, State)
+	transfer_auxiliar indice1 indice2 st (Direc Ultima off) = 
+		transfer_lineas_auxiliar indice1 indice2 st (maximo + offset)
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset = foldr (+) 0 off
+	transfer_auxiliar indice1 indice2 st (Direc Corriente off) = 
+		transfer_lineas_auxiliar indice1 indice2 st (linea + offset)
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset = foldr (+) 0 off
+	transfer_auxiliar indice1 indice2 st (Direc (Abs a) off) = 
+		transfer_lineas_auxiliar indice1 indice2 st (a + offset)
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset = foldr (+) 0 off
+	transfer_auxiliar indice1 indice2 st (Direc (Rel a) off) = 
+		transfer_lineas_auxiliar indice1 indice2 st (linea + a + offset)
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset = foldr (+) 0 off
+
+	transfer_lineas_auxiliar :: Int -> Int -> State -> Int -> (String, State)
+	transfer_lineas_auxiliar indice1 indice2 st indice3
+		| indice3 > maximo 			= ("?\n", (linea, buf, modo, esta_modificado, 't', nom_arch, papelera, aux))	
+		| indice3 < 0						= ("?\n", (linea, buf, modo, esta_modificado, 't', nom_arch, papelera, aux))
+		| indice3 >= indice1 && indice3 < indice2 = ("?\n", (linea, buf, modo, esta_modificado, 't', nom_arch, papelera, aux))
+		| otherwise							= ("", (indice3 + indice2 - indice1 + 1, transfer_en_buffer indice1 indice2 buf indice3, modo, True, 't', nom_arch, papelera, aux))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+
+	transfer_en_buffer :: Int -> Int -> [String] -> Int -> [String]
+	transfer_en_buffer indice1 indice2 buf indice3 = (take indice3 buf) ++ a_transfer ++ (drop indice3 buf)
+		where 
+			a_transfer = (drop (indice1 - 1) (take indice2 buf)) 
+
 
 	-- *** *** *** *** *** *** --
 	-- Funciones auxiliares
