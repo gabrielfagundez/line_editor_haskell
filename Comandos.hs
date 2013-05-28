@@ -71,7 +71,7 @@ module Comandos where
 	comando_escribir = (action_parser_cond 'w') `build` const CWrite
 
 	comando_escribir_con_argumento :: Parse Char Comando
-	comando_escribir_con_argumento = ((action_parser_cond 'w') >*> (token ' ') >*> (args_parser)) `build` \(_, (_, arg)) -> CWriteArg arg 
+	comando_escribir_con_argumento = ((action_parser_cond 'w') >*> (args_parser)) `build` \(_, arg) -> CWriteArg arg 
 										
 	comando_imprimir_actual :: Parse Char Comando
 	comando_imprimir_actual = (action_parser_cond 'p') `build` const CPrintCurr
@@ -345,7 +345,8 @@ module Comandos where
 	cambiar_linea_equal :: Int -> State -> (String, State)
 	cambiar_linea_equal indice st 
 		| indice > maximo 		= ("?\n" ,(linea, buf, modo, esta_modificado, '=', nom_arch, papelera, aux))
-		| indice <= 0					= ("?\n" ,(linea, buf, modo, esta_modificado, '=', nom_arch, papelera, aux))
+		| indice < 0					= ("?\n" ,(linea, buf, modo, esta_modificado, '=', nom_arch, papelera, aux))
+		| indice == 0					= ("0\n" ,(linea, buf, modo, esta_modificado, '=', nom_arch, papelera, aux))
 		| otherwise 					= ((show indice) ++ "\n" ,(linea, buf, modo, esta_modificado, '=', nom_arch, papelera, aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
@@ -408,9 +409,9 @@ module Comandos where
 			maximo = length buf
 			offset = foldr (+) 0 off 
 	ejecutar_comando_print_con_dir (Just (CPrint (Direc (Rel a) off))) st
-		| a + offset > maximo	 			= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch, papelera, aux))			
-		| a + offset <= 0							= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch, papelera, aux))
-		| otherwise 								= ((obtener_linea (a + offset) buf), (a + offset, buf, modo, esta_modificado, 'p', nom_arch, papelera, aux))
+		| a + linea + offset > maximo	 			= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch, papelera, aux))			
+		| a + linea + offset <= 0							= ("?\n", (linea, buf, modo, esta_modificado, 'p', nom_arch, papelera, aux))
+		| otherwise 								= ((obtener_linea (a + linea + offset) buf), (a + linea + offset, buf, modo, esta_modificado, 'p', nom_arch, papelera, aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -533,7 +534,7 @@ module Comandos where
 	ejecutar_comando_show_con_dir (Just (CShow (Direc (Rel a) off))) st
 		| a + offset > maximo	 			= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch, papelera, aux))			
 		| a + offset <= 0							= ("?\n", (linea, buf, modo, esta_modificado, 'n', nom_arch, papelera, aux))
-		| otherwise 								= ((show $ (a + offset)) ++ "\t" ++ (obtener_linea (a + offset) buf), (a + offset, buf, modo, esta_modificado, 'n', nom_arch, papelera, aux))
+		| otherwise 								= ((show $ (a + linea + offset)) ++ "\t" ++ (obtener_linea (a + linea + offset) buf), (a + linea + offset, buf, modo, esta_modificado, 'n', nom_arch, papelera, aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -614,10 +615,10 @@ module Comandos where
 			offset = foldr (+) 0 off
 
 	borrar_linea_change a st 
-		| a <= 0 				= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux))
+		| a < 0 				= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux))
 		| a > maximo 		= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux))
-		| a == maximo 	= ("", (a, borrar_linea_change_buf a buf, ModoInsertar, esta_modificado, 'c', nom_arch, papelera, aux))
-		| otherwise			= ("", (a, borrar_linea_change_buf a buf, ModoInsertar, esta_modificado, 'c', nom_arch, papelera, aux))
+		| a == 0			 	= ("", (1, borrar_linea_change_buf a buf, ModoInsertar, True, 'c', nom_arch, papelera, aux))
+		| otherwise			= ("", (a, borrar_linea_change_buf a buf, ModoInsertar, True, 'c', nom_arch, papelera, aux))
 		where  	
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -719,7 +720,7 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc (Rel a) off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_show_automatico (a + offset1) (b + offset2) st
+		ejecutar_comando_show_automatico (a + linea + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -740,28 +741,28 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc (Abs a) off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_show_automatico (a + offset1) (b + offset2) st
+		ejecutar_comando_show_automatico (a + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc (Rel a) off1) (Direc (Abs b) off2))) st = 
-		ejecutar_comando_show_automatico (a + offset1) (b + offset2) st
+		ejecutar_comando_show_automatico (a + linea + offset1) (b + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc Ultima off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_show_automatico (maximo + offset1) (b + offset2) st
+		ejecutar_comando_show_automatico (maximo + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc (Rel a) off1) (Direc Ultima off2))) st = 
-		ejecutar_comando_show_automatico (a + offset1) (maximo + offset2) st
+		ejecutar_comando_show_automatico (a + linea + offset1) (maximo + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -782,14 +783,14 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc Corriente off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_show_automatico (linea + offset1) (b + offset2) st
+		ejecutar_comando_show_automatico (linea + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc (Rel a) off1) (Direc Corriente off2))) st = 
-		ejecutar_comando_show_automatico (a + offset1) (linea + offset2) st
+		ejecutar_comando_show_automatico (a + linea + offset1) (linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -845,21 +846,21 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc (Rel a) off1) (Direc (Rel b) off2))) st =
-		ejecutar_comando_print_automatico (a + offset1) (b+ offset2) st
+		ejecutar_comando_print_automatico (a + linea + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc (Abs a) off1) (Direc (Rel b) off2))) st =
-		ejecutar_comando_print_automatico (a + offset1) (b + offset2) st
+		ejecutar_comando_print_automatico (a + offset1) (b + linea +offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc (Rel a) off1) (Direc (Abs b) off2))) st =
-		ejecutar_comando_print_automatico (a + offset1) (b + offset2) st
+		ejecutar_comando_print_automatico (a + linea + offset1) (b + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -887,7 +888,7 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc Corriente off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_print_automatico (linea + offset1) (b + offset2) st
+		ejecutar_comando_print_automatico (linea + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -901,21 +902,21 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc Ultima off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_print_automatico (maximo + offset1) (b + offset2) st
+		ejecutar_comando_print_automatico (maximo + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc (Rel a) off1) (Direc Ultima off2))) st = 
-		ejecutar_comando_print_automatico (a + offset1) (maximo + offset2) st
+		ejecutar_comando_print_automatico (a + linea + offset1) (maximo + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc (Rel a) off1) (Direc Corriente off2))) st = 
-		ejecutar_comando_print_automatico (a + offset1) (linea + offset2) st
+		ejecutar_comando_print_automatico (a + linea + offset1) (linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -972,7 +973,7 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc (Rel a) off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_delete_automatico (a + offset1) (b + offset2) st
+		ejecutar_comando_delete_automatico (a + linea + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -993,28 +994,28 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc (Abs a) off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_delete_automatico (a + offset1) (b + offset2) st
+		ejecutar_comando_delete_automatico (a + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc (Rel a) off1) (Direc (Abs b) off2))) st = 
-		ejecutar_comando_delete_automatico (a + offset1) (b + offset2) st
+		ejecutar_comando_delete_automatico (a + linea + offset1) (b + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc Ultima off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_delete_automatico (maximo + offset1) (b + offset2) st
+		ejecutar_comando_delete_automatico (maximo + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc (Rel a) off1) (Direc Ultima off2))) st = 
-		ejecutar_comando_delete_automatico (a + offset1) (maximo + offset2) st
+		ejecutar_comando_delete_automatico (a + linea + offset1) (maximo + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1035,14 +1036,14 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc Corriente off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_delete_automatico (linea + offset1) (b + offset2) st
+		ejecutar_comando_delete_automatico (linea + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc (Rel a) off1) (Direc Corriente off2))) st = 
-		ejecutar_comando_delete_automatico (a + offset1) (linea + offset2) st
+		ejecutar_comando_delete_automatico (a + linea + offset1) (linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1100,7 +1101,7 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_change_con_dos_dir (Just (CChangeT (Direc (Rel a) off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_change_automatico (a + offset1) (b + offset2) st
+		ejecutar_comando_change_automatico (a + linea + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1121,28 +1122,28 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_change_con_dos_dir (Just (CChangeT (Direc (Abs a) off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_change_automatico (a + offset1) (b + offset2) st
+		ejecutar_comando_change_automatico (a + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_change_con_dos_dir (Just (CChangeT (Direc (Rel a) off1) (Direc (Abs b) off2))) st = 
-		ejecutar_comando_change_automatico (a + offset1) (b + offset2) st
+		ejecutar_comando_change_automatico (a + linea + offset1) (b + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_change_con_dos_dir (Just (CChangeT (Direc Ultima off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_change_automatico (maximo + offset1) (b + offset2) st
+		ejecutar_comando_change_automatico (maximo + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_change_con_dos_dir (Just (CChangeT (Direc (Rel a) off1) (Direc Ultima off2))) st = 
-		ejecutar_comando_change_automatico (a + offset1) (maximo + offset2) st
+		ejecutar_comando_change_automatico (a + linea + offset1) (maximo + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1163,14 +1164,14 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_change_con_dos_dir (Just (CChangeT (Direc Corriente off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_change_automatico (linea + offset1) (b + offset2) st
+		ejecutar_comando_change_automatico (linea + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_change_con_dos_dir (Just (CChangeT (Direc (Rel a) off1) (Direc Corriente off2))) st = 
-		ejecutar_comando_change_automatico (a + offset1) (linea + offset2) st
+		ejecutar_comando_change_automatico (a + linea + offset1) (linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1230,7 +1231,7 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc (Rel a) off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_yank_automatico (a + offset1) (b + offset2) st
+		ejecutar_comando_yank_automatico (a + linea + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1251,28 +1252,28 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc (Abs a) off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_yank_automatico (a + offset1) (b + offset2) st
+		ejecutar_comando_yank_automatico (a + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc (Rel a) off1) (Direc (Abs b) off2))) st = 
-		ejecutar_comando_yank_automatico (a + offset1) (b + offset2) st
+		ejecutar_comando_yank_automatico (a + linea + offset1) (b + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc Ultima off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_yank_automatico (maximo + offset1) (b + offset2) st
+		ejecutar_comando_yank_automatico (maximo + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc (Rel a) off1) (Direc Ultima off2))) st = 
-		ejecutar_comando_yank_automatico (a + offset1) (maximo + offset2) st
+		ejecutar_comando_yank_automatico (a + linea + offset1) (maximo + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1293,14 +1294,14 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc Corriente off1) (Direc (Rel b) off2))) st = 
-		ejecutar_comando_yank_automatico (linea + offset1) (b + offset2) st
+		ejecutar_comando_yank_automatico (linea + offset1) (b + linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc (Rel a) off1) (Direc Corriente off2))) st = 
-		ejecutar_comando_yank_automatico (a + offset1) (linea + offset2) st
+		ejecutar_comando_yank_automatico (a + linea + offset1) (linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1361,7 +1362,7 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc (Rel a) off1) (Direc (Rel b) off2) dir3)) st = 
-		ejecutar_comando_move_automatico (a + offset1) (b + offset2) st dir3
+		ejecutar_comando_move_automatico (a + linea + offset1) (b + linea + offset2) st dir3
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1382,28 +1383,28 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc (Abs a) off1) (Direc (Rel b) off2) dir3)) st = 
-		ejecutar_comando_move_automatico (a + offset1) (b + offset2) st dir3
+		ejecutar_comando_move_automatico (a + offset1) (b + linea + offset2) st dir3
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc (Rel a) off1) (Direc (Abs b) off2) dir3)) st = 
-		ejecutar_comando_move_automatico (a + offset1) (b + offset2) st dir3
+		ejecutar_comando_move_automatico (a + linea + offset1) (b + offset2) st dir3
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc Ultima off1) (Direc (Rel b) off2) dir3)) st = 
-		ejecutar_comando_move_automatico (maximo + offset1) (b + offset2) st dir3
+		ejecutar_comando_move_automatico (maximo + offset1) (b + linea + offset2) st dir3
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc (Rel a) off1) (Direc Ultima off2) dir3)) st = 
-		ejecutar_comando_move_automatico (a + offset1) (maximo + offset2) st dir3
+		ejecutar_comando_move_automatico (a + linea + offset1) (maximo + offset2) st dir3
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1424,14 +1425,14 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc Corriente off1) (Direc (Rel b) off2) dir3)) st = 
-		ejecutar_comando_move_automatico (linea + offset1) (b + offset2) st dir3
+		ejecutar_comando_move_automatico (linea + offset1) (b + linea + offset2) st dir3
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc (Rel a) off1) (Direc Corriente off2) dir3)) st = 
-		ejecutar_comando_move_automatico (a + offset1) (linea + offset2) st dir3
+		ejecutar_comando_move_automatico (a + linea + offset1) (linea + offset2) st dir3
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1538,7 +1539,7 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc (Rel a) off1) (Direc (Rel b) off2) dir3)) st = 
-		ejecutar_comando_transfer_automatico (a + offset1) (b + offset2) st dir3
+		ejecutar_comando_transfer_automatico (a + linea + offset1) (b + linea + offset2) st dir3
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1559,28 +1560,28 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc (Abs a) off1) (Direc (Rel b) off2) dir3)) st = 
-		ejecutar_comando_transfer_automatico (a + offset1) (b + offset2) st dir3
+		ejecutar_comando_transfer_automatico (a + offset1) (b + linea + offset2) st dir3
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc (Rel a) off1) (Direc (Abs b) off2) dir3)) st = 
-		ejecutar_comando_transfer_automatico (a + offset1) (b + offset2) st dir3
+		ejecutar_comando_transfer_automatico (a + linea + offset1) (b + offset2) st dir3
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc Ultima off1) (Direc (Rel b) off2) dir3)) st = 
-		ejecutar_comando_transfer_automatico (maximo + offset1) (b + offset2) st dir3
+		ejecutar_comando_transfer_automatico (maximo + offset1) (b + linea + offset2) st dir3
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc (Rel a) off1) (Direc Ultima off2) dir3)) st = 
-		ejecutar_comando_transfer_automatico (a + offset1) (maximo + offset2) st dir3
+		ejecutar_comando_transfer_automatico (a + linea + offset1) (maximo + offset2) st dir3
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1601,14 +1602,14 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc Corriente off1) (Direc (Rel b) off2) dir3)) st = 
-		ejecutar_comando_transfer_automatico (linea + offset1) (b + offset2) st dir3
+		ejecutar_comando_transfer_automatico (linea + offset1) (b + linea + offset2) st dir3
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc (Rel a) off1) (Direc Corriente off2) dir3)) st = 
-		ejecutar_comando_transfer_automatico (a + offset1) (linea + offset2) st dir3
+		ejecutar_comando_transfer_automatico (a + linea + offset1) (linea + offset2) st dir3
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1671,7 +1672,6 @@ module Comandos where
 	transfer_lineas_auxiliar indice1 indice2 st indice3
 		| indice3 > maximo 			= ("?\n", (linea, buf, modo, esta_modificado, 't', nom_arch, papelera, aux))	
 		| indice3 < 0						= ("?\n", (linea, buf, modo, esta_modificado, 't', nom_arch, papelera, aux))
-		| indice3 >= indice1 && indice3 < indice2 = ("?\n", (linea, buf, modo, esta_modificado, 't', nom_arch, papelera, aux))
 		| otherwise							= ("", (indice3 + indice2 - indice1 + 1, transfer_en_buffer indice1 indice2 buf indice3, modo, True, 't', nom_arch, papelera, aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
