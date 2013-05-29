@@ -278,7 +278,7 @@ module Comandos where
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 
 	ejecutar_comando_paste_current :: Maybe Comando -> State -> (String, State)
-	ejecutar_comando_paste_current comando st = ("", (linea + length papelera, paste papelera linea buf, modo, True, 'x', nom_arch, [], aux))
+	ejecutar_comando_paste_current comando st = ("", (linea + length papelera, paste papelera linea buf, modo, True, 'x', nom_arch, papelera, aux))
 		where 
 			(linea, buf, modo, _, _, nom_arch, papelera, aux) = st
 
@@ -822,7 +822,7 @@ module Comandos where
 	ejecutar_comando_paste_automatico indice st 
 		| indice > maximo 								= ("?\n", (linea, buf, modo, esta_modificado, 'x', nom_arch, papelera, aux))
 		| indice < 0 											= ("?\n", (linea, buf, modo, esta_modificado, 'x', nom_arch, papelera, aux))
-		|	otherwise 											= ("", (indice + length papelera, paste papelera indice buf, modo, True, 'x', nom_arch, [], aux))
+		|	otherwise 											= ("", (indice + length papelera, paste papelera indice buf, modo, True, 'x', nom_arch, papelera, aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
