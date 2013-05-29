@@ -902,6 +902,7 @@ module Comandos where
 			maximo = length buf
 
 
+<<<<<<< HEAD
 	--DEFAULT
 	ejecutar_comando_move_con_dir com st =
 		ejecutar_comando_move_automatico (maximo + 2) (maximo + 2) st (Direc (Abs 2) []) 
@@ -956,6 +957,8 @@ module Comandos where
 				maximo = length buf
 
 
+=======
+>>>>>>> 38733322d4cee536a76ea71e8b609160bc487ac6
 	-- *** *** *** *** *** *** --
 	-- Ejecucion de comandos con dos direcciones
 	-- *** *** *** *** *** *** --

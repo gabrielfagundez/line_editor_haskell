@@ -26,12 +26,12 @@ module Main(main) where
 	edi estado debo_salir =
 		if (not debo_salir) then (
 			do
-				let (_, buffer, _, _, ultimo_comando, _, _, _)	 = estado 
+				let (_, buffer, modo_actual, _, ultimo_comando, _, _, _)	 = estado 
 				let (a_imprimir, estado_actual) = imprimir_cantidad_palabras ultimo_comando estado
 				putStr a_imprimir
 				
 				linea_cruda <- getLine
-				let linea_leida = borrar_espacios linea_cruda -- Lee el String de la entrada hasta el fin de linea
+				let linea_leida = borrar_espacios linea_cruda modo_actual -- Lee el String de la entrada hasta el fin de linea
 				
 				let (_, _, modo_actual, buf_mod, _, _, _, _)	 	= estado_actual 
 				let (comando_leido, pr) 												= parse_string_entrada linea_leida
@@ -129,9 +129,10 @@ module Main(main) where
 		else 
 			do return ()
 
-	borrar_espacios :: String -> String
-	borrar_espacios [] = []
-	borrar_espacios (x:xs)
-		| x == ' ' 			= borrar_espacios xs
-		| otherwise 		= x : borrar_espacios xs
+	borrar_espacios :: String -> ConsoleState -> String 
+	borrar_espacios [] _ = []
+	borrar_espacios linea_cruda ModoInsertar = linea_cruda
+	borrar_espacios (x:xs) _
+		| x == ' '			= borrar_espacios xs ModoComando
+		| otherwise 		= x : borrar_espacios xs ModoComando
 
