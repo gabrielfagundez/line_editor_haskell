@@ -34,10 +34,13 @@ module Main(main) where
 				let linea_leida = borrar_espacios linea_cruda -- Lee el String de la entrada hasta el fin de linea
 				
 				let (_, _, modo_actual, buf_mod, _, _, _, _)	 	= estado_actual 
-				let comando_leido																= parse_string_entrada linea_leida
+				let (comando_leido, pr) 												= parse_string_entrada linea_leida
 				let (a_mostrar, nuevo_estado) 									= actualizar linea_leida comando_leido estado_actual
-				
+				let (argumento)																	= segundo_argumento pr nuevo_estado
+
 				putStr a_mostrar
+				putStr argumento
+
 
 				let (_, buf, _, _, comando_ejecutado, nom_arch, _, _)	 		= nuevo_estado
 				salvar comando_ejecutado nom_arch buf
@@ -88,6 +91,15 @@ module Main(main) where
 	actualizar_insertar string prev_state = ejecutar_comando_modo_insertar string prev_state
 
 
+	segundo_argumento :: Char -> State -> String
+	segundo_argumento 'n' nuevo_estado 	= (show $ linea) ++ "\t" ++ (obtener_linea linea buf)
+		where 
+			(linea, buf, _, _, _, _, _, _) = nuevo_estado
+	segundo_argumento 'p' nuevo_estado	= (obtener_linea linea buf)
+		where 
+			(linea, buf, _, _, _, _, _, _) = nuevo_estado
+	segundo_argumento '-' nuevo_estado 	= ""
+	segundo_argumento pr nuevo_estado 	= ""
 
 
 

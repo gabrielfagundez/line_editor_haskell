@@ -26,12 +26,19 @@ module Comandos where
 	-- Funcion que parsea la entrada estandar recibida en el Main
 	-- *** *** *** *** *** *** --
 	
-	parse_string_entrada :: String -> Maybe Comando
+	parse_string_entrada :: String -> (Maybe Comando, Char)
 	parse_string_entrada string =
-	    case filter (null.snd) (comando string) of
-	      [(e,"")] 						-> Just e
-	      [(e, ""), (a, "")]	-> Just e
-	      _        						-> Nothing
+	    case filter (\x -> (snd x == "p") || (snd x == "n") || null (snd x)) (comando string) of
+	      [(e,"")] 		-> (Just e, '-')
+	      [(e,"p")]		-> (Just e, 'p')
+	      [(e,"n")]		-> (Just e, 'n')
+	      [(e,"p"), (f,"pp")]		-> (Just e, 'p')
+	      [(e,"p"), (f,"pn")]		-> (Just e, 'p')
+	      [(e,""), (f,"p")]			-> (Just e, '-')
+	      [(e,"n"), (f,"np")]		-> (Just e, 'n')
+	      [(e,"n"), (f,"nn")]		-> (Just e, 'n')
+	      [(e,""), (f,"n")]			-> (Just e, '-')
+	      _        		-> (Nothing, '-')
 
 	-- *** *** *** *** *** *** --
 	-- Funcion que retorna un comando
@@ -828,10 +835,15 @@ module Comandos where
 			maximo = length buf
 
 
+
+
+
+
+
 	-- *** *** *** *** *** *** --
 	-- Ejecucion de comandos con dos direcciones
 	-- *** *** *** *** *** *** --
-
+	-- *********************************************************************************************** --
 	ejecutar_comando_show_con_dos_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_show_con_dos_dir (Just (CShowT (Direc Ultima off1) (Direc Ultima off2))) st = 
 		ejecutar_comando_show_automatico (maximo + offset1) (maximo + offset2) st
