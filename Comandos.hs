@@ -10,7 +10,7 @@ module Comandos where
 									CPrintT Direc Direc |CShowT Direc Direc | CDelete Direc | CDeleteCurr | CDeleteT Direc Direc |
 									CChangeT Direc Direc | CChange Direc | CChangeCurr | CYankCurr | CYankT Direc Direc | CYank Direc |
 									CPasteCurr | CPaste Direc | CChangeDir Direc | CEqual Direc | CEqualCurr | CMoveT Direc Direc Direc | 
-									CTransferT Direc Direc Direc
+									CTransferT Direc Direc Direc | CMove Direc Direc | CTransfer Direc Direc
 		deriving (Eq, Show)
 
 	data ConsoleState 	= ModoComando | ModoInsertar deriving (Eq, Ord, Show)
@@ -56,7 +56,8 @@ module Comandos where
 						`alt` comando_yank_con_dos_dir `alt` comando_yank_con_direccion `alt` comando_pegar_actual
 						`alt` comando_pegar_con_dir `alt` comando_mostrar_numero_linea
 						`alt` comando_mostrar_numer_linea_actual `alt` comando_mover_con_dos_dir `alt` comando_transferir_con_dos_dir
-						`alt` comando_change_actual `alt` comando_cambiar_direccion
+						`alt` comando_change_actual `alt` comando_cambiar_direccion `alt` comando_move_una_dir
+						`alt` comando_transfer_una_dir
  
 
 	-- *** *** *** *** *** *** --
@@ -101,7 +102,13 @@ module Comandos where
 
 	comando_mostrar_numer_linea_actual :: Parse Char Comando
 	comando_mostrar_numer_linea_actual = (action_parser_cond '=') `build` const CEqualCurr
-	
+
+	comando_move_una_dir :: Parse Char Comando
+	comando_move_una_dir = (directions_parser >*> (action_parser_cond 'm') >*> directions_parser) `build` \(dir1,(_ ,dir2)) -> CMove dir1 dir2
+
+	comando_transfer_una_dir :: Parse Char Comando
+	comando_transfer_una_dir = (directions_parser >*> (action_parser_cond 't') >*> directions_parser) `build` \(dir1,(_ ,dir2)) -> CTransfer dir1 dir2
+
 
 	comando_imprimir_con_direccion :: Parse Char Comando
 	comando_imprimir_con_direccion = (directions_parser >*> (action_parser_cond 'p')) `build` \(dir, _) -> CPrint dir
@@ -215,6 +222,8 @@ module Comandos where
 
  	ejecutar_comando_modo_comando (Just (CMoveT direc1 direc2 direc3)) st  			= ejecutar_comando_move_con_dos_dir (Just (CMoveT direc1 direc2 direc3)) st
  	ejecutar_comando_modo_comando (Just (CTransferT direc1 direc2 direc3)) st  	= ejecutar_comando_transfer_con_dos_dir (Just (CTransferT direc1 direc2 direc3)) st
+ 	ejecutar_comando_modo_comando (Just (CMove direc1 direc2)) st 							= ejecutar_comando_move_con_dir (Just (CMove direc1 direc2)) st
+ 	ejecutar_comando_modo_comando (Just (CTransfer direc1 direc2)) st 					= ejecutar_comando_transfer_con_dir (Just (CTransfer direc1 direc2)) st
 
 
 	-- *** *** *** *** *** *** --
@@ -835,9 +844,95 @@ module Comandos where
 			maximo = length buf
 
 
+	-- *********************************************************************************************** --
+	ejecutar_comando_move_con_dir (Just (CMove (Direc Ultima off) dir3)) st = 
+		ejecutar_comando_move_automatico (maximo + offset) (maximo + offset) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset = foldr (+) 0 off
+	ejecutar_comando_move_con_dir (Just (CMove (Direc Corriente off) dir3)) st = 
+		ejecutar_comando_move_automatico (linea + offset) (linea + offset) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset = foldr (+) 0 off
+	ejecutar_comando_move_con_dir (Just (CMove (Direc (Abs a) off) dir3)) st =
+		ejecutar_comando_move_automatico (a + offset) (a + offset) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset = foldr (+) 0 off
+	ejecutar_comando_move_con_dir (Just (CMove (Direc (Rel a) off) dir3)) st =
+		ejecutar_comando_move_automatico (a + linea + offset) (a + linea + offset) st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset = foldr (+) 0 off
+	ejecutar_comando_move_con_dir (Just (CMove (Direc Todo []) dir3)) st =
+		ejecutar_comando_move_automatico 1 maximo st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+	ejecutar_comando_move_con_dir (Just (CMove (Direc TdoRelativo []) dir3)) st =
+		ejecutar_comando_move_automatico linea maximo st dir3
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
 
 
+	--DEFAULT
+	ejecutar_comando_move_con_dir com st =
+		ejecutar_comando_move_automatico (maximo + 2) (maximo + 2) st (Direc (Abs 2) []) 
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
 
+
+    -- *********************************************************************************************** --
+	ejecutar_comando_transfer_con_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_transfer_con_dir (Just (CTransfer (Direc Ultima off) dir3)) st =
+		ejecutar_comando_transfer_automatico (maximo + offset) (maximo + offset) st dir3
+		where
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset = foldr (+) 0 off
+	ejecutar_comando_transfer_con_dir (Just (CTransfer (Direc Corriente off) dir3)) st =
+	    ejecutar_comando_transfer_automatico (linea + offset) (linea + offset) st dir3
+	    where
+	        (linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+	        maximo = length buf
+	        offset = foldr (+) 0 off
+	ejecutar_comando_transfer_con_dir (Just (CTransfer (Direc (Abs a) off) dir3)) st =
+	    ejecutar_comando_transfer_automatico (a + offset) (a + offset) st dir3
+	    where
+	        (linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+	        maximo = length buf
+	        offset = foldr (+) 0 off
+	ejecutar_comando_transfer_con_dir (Just (CTransfer (Direc (Rel a) off) dir3)) st =
+	    ejecutar_comando_transfer_automatico (a + linea + offset) (a + linea + offset) st dir3
+	    where
+	        (linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+	        maximo = length buf
+	        offset = foldr (+) 0 off
+	ejecutar_comando_transfer_con_dir (Just (CTransfer (Direc Todo []) dir3)) st =
+	    ejecutar_comando_transfer_automatico 1 maximo st dir3
+	    where
+	        (linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+	        maximo = length buf
+	ejecutar_comando_transfer_con_dir (Just (CTransfer (Direc TdoRelativo []) dir3)) st =
+	    ejecutar_comando_transfer_automatico linea maximo st dir3
+	    where
+	        (linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+	        maximo = length buf
+
+
+    -- Default
+	ejecutar_comando_transfer_con_dir com st =
+		ejecutar_comando_transfer_automatico (maximo + 2) (maximo + 2) st (Direc (Abs 0) [])
+			where
+				(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+				maximo = length buf
 
 
 	-- *** *** *** *** *** *** --
