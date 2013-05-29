@@ -36,7 +36,7 @@ module DirectionsParser where
 	-- Parser de base
 	-- *** *** *** *** *** *** --
 
-	parse_base = parse_ultima `alt` parse_corriente `alt` parse_absolute `alt` parse_relative `alt` parse_todo
+	parse_base = parse_ultima `alt` parse_corriente `alt` parse_absolute `alt` parse_relative `alt` parse_todo `alt` parse_todo_relativo
 
 	parse_todo :: Parse Char Base
 	parse_todo "" = []
@@ -47,7 +47,7 @@ module DirectionsParser where
 	parse_todo_relativo :: Parse Char Base
 	parse_todo_relativo "" = []
 	parse_todo_relativo (x:xs) 
-		| x == ';' 			= [(Todo, xs)]
+		| x == ';' 			= [(TdoRelativo, xs)]
 		| otherwise 		= []
 
 
