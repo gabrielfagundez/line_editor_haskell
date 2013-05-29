@@ -10,7 +10,7 @@ module Comandos where
 									CPrintT Direc Direc |CShowT Direc Direc | CDelete Direc | CDeleteCurr | CDeleteT Direc Direc |
 									CChangeT Direc Direc | CChange Direc | CChangeCurr | CYankCurr | CYankT Direc Direc | CYank Direc |
 									CPasteCurr | CPaste Direc | CChangeDir Direc | CEqual Direc | CEqualCurr | CMoveT Direc Direc Direc | 
-									CTransferT Direc Direc Direc
+									CTransferT Direc Direc Direc | CJoin Direc | CJoinT Direc Direc
 		deriving (Eq, Show)
 
 	data ConsoleState 	= ModoComando | ModoInsertar deriving (Eq, Ord, Show)
@@ -56,7 +56,7 @@ module Comandos where
 						`alt` comando_yank_con_dos_dir `alt` comando_yank_con_direccion `alt` comando_pegar_actual
 						`alt` comando_pegar_con_dir `alt` comando_mostrar_numero_linea
 						`alt` comando_mostrar_numer_linea_actual `alt` comando_mover_con_dos_dir `alt` comando_transferir_con_dos_dir
-						`alt` comando_change_actual `alt` comando_cambiar_direccion
+						`alt` comando_change_actual `alt` comando_cambiar_direccion `alt` comando_juntar_con_dir `alt` comando_juntar_con_dos_dir
  
 
 	-- *** *** *** *** *** *** --
@@ -133,6 +133,9 @@ module Comandos where
 	comando_mostrar_numero_linea :: Parse Char Comando
 	comando_mostrar_numero_linea = (directions_parser >*> (action_parser_cond '=')) `build` \(dir, _) -> CEqual dir
 
+	comando_juntar_con_dir :: Parse Char Comando
+	comando_juntar_con_dir = (directions_parser >*> (action_parser_cond 'j')) `build` \(dir, _) -> CJoin dir
+
 	comando_imprimir_con_dos_dir :: Parse Char Comando
 	comando_imprimir_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'p')) `build` \(dir1,(_,(dir2, _))) -> CPrintT dir1 dir2
 
@@ -154,6 +157,9 @@ module Comandos where
 	comando_transferir_con_dos_dir :: Parse Char Comando
 	comando_transferir_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 't') >*> directions_parser) `build` \(dir1,(_,(dir2,(_, dir3)))) -> CTransferT dir1 dir2 dir3
 
+	comando_juntar_con_dos_dir :: Parse Char Comando
+	comando_juntar_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'j')) `build` \(dir1,(_,(dir2, _))) -> CJoinT dir1 dir2
+
 	-- *** *** *** *** *** *** --
 	-- Ejecucion de los comandos
 	-- *** *** *** *** *** *** --
@@ -162,16 +168,16 @@ module Comandos where
 	-- Ejecucion en modo insertar
 	ejecutar_comando_modo_insertar :: String -> State -> (String, State)
 	ejecutar_comando_modo_insertar "." st 
-		| ult_com == 'i' 													= ("", (linea + aux - 1, insert linea papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0))
-		| ult_com == 'a'						 							= ("", (linea + aux, insert (linea+1) papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0))		
-		| ult_com == 'c'						 							= ("", (linea + aux - 1, insert linea papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0))		
-		| otherwise 															= error "Modo insertar con comando anterior no definido."--("", (linea + aux - 1, insert linea papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0))
+		| ult_com == 'i' 													= ("", (linea + aux - 1, insertar linea papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0))
+		| ult_com == 'a'						 							= ("", (linea + aux, insertar (linea+1) papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0))		
+		| ult_com == 'c'						 							= ("", (linea + aux - 1, insertar linea papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0))		
+		| otherwise 															= error "Modo insertar con comando anterior no definido."--("", (linea + aux - 1, insertar linea papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0))
 		where (linea, buf, _, esta_modificado, ult_com, nom_arch, papelera, aux) = st
 	ejecutar_comando_modo_insertar string st 
 		| ult_com == 'i' 		= ("", (linea, buf, modo, True, ult_com, nom_arch, nueva_papelera, aux + 1))
 		| ult_com == 'a' 		= ("", (linea, buf, modo, True, ult_com, nom_arch, nueva_papelera, aux + 1))
 		| ult_com == 'c' 		= ("", (linea, buf, modo, True, ult_com, nom_arch, nueva_papelera, aux + 1))
-		| otherwise 															= error "Modo insertar con comando anterior no definido."--("", (linea + aux - 1, insert linea papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0))
+		| otherwise 															= error "Modo insertar con comando anterior no definido."--("", (linea + aux - 1, insertar linea papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0))
 		where 
 			(linea, buf, modo, esta_modificado, ult_com, nom_arch, papelera, aux) = st
 			nueva_linea = linea + 1
@@ -206,13 +212,15 @@ module Comandos where
 	ejecutar_comando_modo_comando (Just (CPaste direc)) st 			= ejecutar_comando_paste_con_dir (Just (CPaste direc)) st 
 	ejecutar_comando_modo_comando (Just (CChangeDir direc)) st 	= ejecutar_comando_change_dir (Just (CChangeDir direc)) st
 	ejecutar_comando_modo_comando (Just (CEqual direc)) st 			= ejecutar_comando_equal_con_dir (Just (CEqual direc)) st
+	ejecutar_comando_modo_comando (Just (CJoin direc)) st 			= ejecutar_comando_join_con_dir (Just (CJoin direc)) st
 
 	ejecutar_comando_modo_comando (Just (CPrintT direc1 direc2)) st 		= ejecutar_comando_print_con_dos_dir (Just (CPrintT direc1 direc2)) st
  	ejecutar_comando_modo_comando (Just (CShowT direc1 direc2)) st 			= ejecutar_comando_show_con_dos_dir (Just (CShowT direc1 direc2)) st
  	ejecutar_comando_modo_comando (Just (CDeleteT direc1 direc2)) st 		= ejecutar_comando_delete_con_dos_dir (Just (CDeleteT direc1 direc2)) st
  	ejecutar_comando_modo_comando (Just (CChangeT direc1 direc2)) st 		= ejecutar_comando_change_con_dos_dir (Just (CChangeT direc1 direc2)) st
  	ejecutar_comando_modo_comando (Just (CYankT direc1 direc2)) st  		= ejecutar_comando_yank_con_dos_dir (Just (CYankT direc1 direc2)) st
-
+	ejecutar_comando_modo_comando (Just (CJoinT direc1 direc2)) st  		= ejecutar_comando_join_con_dos_dir (Just (CJoinT direc1 direc2)) st
+ 	
  	ejecutar_comando_modo_comando (Just (CMoveT direc1 direc2 direc3)) st  			= ejecutar_comando_move_con_dos_dir (Just (CMoveT direc1 direc2 direc3)) st
  	ejecutar_comando_modo_comando (Just (CTransferT direc1 direc2 direc3)) st  	= ejecutar_comando_transfer_con_dos_dir (Just (CTransferT direc1 direc2 direc3)) st
 
@@ -673,6 +681,18 @@ module Comandos where
 	borrar_linea_buf linea [] = []
 	borrar_linea_buf linea arr = take (linea-1) arr ++ drop linea arr
 
+	-- *********************************************************************************************** --
+	ejecutar_comando_join_con_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_join_con_dir (Just (CJoin (Direc Ultima off))) st = ("", st)
+	ejecutar_comando_join_con_dir (Just (CJoin (Direc Corriente off))) st = ("?\n", st)
+	ejecutar_comando_join_con_dir (Just (CJoin (Direc (Abs a) off))) st = ("", st)
+	ejecutar_comando_join_con_dir (Just (CJoin (Direc (Rel a) off))) st = ("", st)
+	ejecutar_comando_join_con_dir (Just (CJoin (Direc Todo off))) st = 
+		ejecutar_comando_join_automatico 1 maximo st
+				where 
+					(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+					maximo = length buf
+	ejecutar_comando_join_con_dir (Just (CJoin (Direc TdoRelativo off))) st = ("", st)
 
 	-- *********************************************************************************************** --
 	ejecutar_comando_change_con_dir :: Maybe Comando -> State -> (String, State)
@@ -833,9 +853,6 @@ module Comandos where
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
-
-
-
 
 
 
@@ -1494,6 +1511,139 @@ module Comandos where
 	obtener_lineas_yank a b [] = []
 	obtener_lineas_yank a b buf = drop (a-1) $ take b buf
 
+	ejecutar_comando_join_con_dos_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_join_con_dos_dir (Just (CJoinT (Direc Ultima off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_join_automatico (maximo + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_join_con_dos_dir (Just (CJoinT (Direc Corriente off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_join_automatico (linea + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_join_con_dos_dir (Just (CJoinT (Direc (Abs a) off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_join_automatico (a + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_join_con_dos_dir (Just (CJoinT (Direc (Rel a) off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_join_automatico (a + linea + offset1) (linea + b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_join_con_dos_dir (Just (CJoinT (Direc Corriente off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_join_automatico (linea + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_join_con_dos_dir (Just (CJoinT (Direc Ultima off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_join_automatico (maximo + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_join_con_dos_dir (Just (CJoinT (Direc (Abs a) off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_join_automatico (a + offset1) (linea + b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_join_con_dos_dir (Just (CJoinT (Direc (Rel a) off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_join_automatico (a + linea + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_join_con_dos_dir (Just (CJoinT (Direc Ultima off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_join_automatico (maximo + offset1) (linea + b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_join_con_dos_dir (Just (CJoinT (Direc (Rel a) off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_join_automatico (a + linea + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_join_con_dos_dir (Just (CJoinT (Direc Ultima off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_join_automatico (maximo + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_join_con_dos_dir (Just (CJoinT (Direc (Abs a) off1) (Direc Ultima off2))) st = 
+		ejecutar_comando_join_automatico (a + offset1) (maximo + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_join_con_dos_dir (Just (CJoinT (Direc Corriente off1) (Direc (Rel b) off2))) st = 
+		ejecutar_comando_join_automatico (linea + offset1) (linea + b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_join_con_dos_dir (Just (CJoinT (Direc (Rel a) off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_join_automatico (a + linea + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_join_con_dos_dir (Just (CJoinT (Direc Corriente off1) (Direc (Abs b) off2))) st = 
+		ejecutar_comando_join_automatico (linea + offset1) (b + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+	ejecutar_comando_join_con_dos_dir (Just (CJoinT (Direc (Abs a) off1) (Direc Corriente off2))) st = 
+		ejecutar_comando_join_automatico (a + offset1) (linea + offset2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+			offset1 = foldr (+) 0 off1
+			offset2 = foldr (+) 0 off2
+
+	ejecutar_comando_join_automatico :: Int -> Int -> State -> (String, State)
+	ejecutar_comando_join_automatico indice1 indice2 st
+		| indice1 > maximo	= ("?\n", (linea, buf, modo, esta_modificado, 'j', nom_arch, papelera, aux))	
+		| indice2 > maximo	= ("?\n", (linea, buf, modo, esta_modificado, 'j', nom_arch, papelera, aux))	
+		| indice1 <= 0		= ("?\n", (linea, buf, modo, esta_modificado, 'j', nom_arch, papelera, aux))	
+		| indice2 <= 0		= ("?\n", (linea, buf, modo, esta_modificado, 'j', nom_arch, papelera, aux))	
+		| indice1 > indice2 = ("?\n", (linea, buf, modo, esta_modificado, 'j', nom_arch, papelera, aux))	
+		| otherwise 		= ("", (indice1, unir_lineas indice1 indice2 buf, modo, True, 'j', nom_arch, papelera, aux))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+
+	unir_lineas :: Int -> Int -> [String] -> [String]
+	unir_lineas indice1 indice2 buf = take (indice1-1) buf ++ [unir_lineas_aux (drop (indice1-1) (take indice2 buf))] ++ drop indice2 buf 
+
+	unir_lineas_aux :: [String] -> String
+	unir_lineas_aux [] = ""
+	unir_lineas_aux (x:xs) = x ++ unir_lineas_aux xs
+
 
 	ejecutar_comando_move_con_dos_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc Ultima off1) (Direc Ultima off2) dir3)) st = 
@@ -1843,8 +1993,8 @@ module Comandos where
 	-- Funciones auxiliares
 	-- *** *** *** *** *** *** --
 
-	insert :: Int -> Buffer -> Buffer -> Buffer
-	insert n papelera buffer 			= (take (n-1) buffer) ++ papelera ++ (drop (n-1) buffer)
+	insertar :: Int -> Buffer -> Buffer -> Buffer
+	insertar n papelera buffer 			= (take (n-1) buffer) ++ papelera ++ (drop (n-1) buffer)
 
 	escribir_arreglo_archivo_externo :: FilePath -> [[Char]] -> IO ()
 	escribir_arreglo_archivo_externo ruta [] = return()
