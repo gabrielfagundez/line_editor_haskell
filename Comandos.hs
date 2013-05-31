@@ -242,7 +242,7 @@ module Comandos where
 	-- *********************************************************************************************** --
 	ejecutar_salir :: Maybe Comando -> State -> (String, State)
 	ejecutar_salir comando st
-		| (esta_modificado) && (ult_com /= 'q')		=	("?\n", (linea, buf, modo, not esta_modificado, 'q', nom_arch, papelera, aux))
+		| (esta_modificado) && (ult_com /= 'q')		=	("", (linea, buf, modo, not esta_modificado, 'q', nom_arch, papelera, aux))
 		| otherwise																= ("", st)
 		where (linea, buf, modo, esta_modificado, ult_com, nom_arch, papelera, aux) = st
 
@@ -1073,6 +1073,9 @@ module Comandos where
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
+	
+
+	-- DEFAULT
 	ejecutar_comando_show_con_dos_dir com st = 
 		ejecutar_comando_show_automatico 3 2 st
 		where 
@@ -1092,6 +1095,8 @@ module Comandos where
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 
+
+	-- *********************************************************************************************** --
 	ejecutar_comando_print_con_dos_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_print_con_dos_dir (Just (CPrintT (Direc Ultima off1) (Direc Ultima off2))) st =
 		ejecutar_comando_print_automatico (maximo + offset1) (maximo + offset2) st
@@ -1205,11 +1210,15 @@ module Comandos where
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
+	
+
+	-- DEFAULT
 	ejecutar_comando_print_con_dos_dir com st = 
 		ejecutar_comando_print_automatico 3 2 st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
+
 
 	ejecutar_comando_print_automatico :: Int -> Int -> State -> (String, State)
 	ejecutar_comando_print_automatico indice1 indice2 st
@@ -1223,6 +1232,8 @@ module Comandos where
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 
+
+	-- *********************************************************************************************** --
 	ejecutar_comando_delete_con_dos_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_delete_con_dos_dir (Just (CDeleteT (Direc Ultima off1) (Direc Ultima off2))) st = 
 		ejecutar_comando_delete_automatico (maximo + offset1) (maximo + offset2) st
@@ -1337,6 +1348,15 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 
+
+	-- DEFAULT
+	ejecutar_comando_delete_con_dos_dir com st = 
+		ejecutar_comando_delete_automatico (maximo + 2) maximo st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+
+
 	ejecutar_comando_delete_automatico :: Int -> Int -> State -> (String, State)
 	ejecutar_comando_delete_automatico indice1 indice2 st
 		| indice1 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux))	
@@ -1350,6 +1370,8 @@ module Comandos where
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 
+
+	-- *********************************************************************************************** --
 	ejecutar_comando_change_con_dos_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_change_con_dos_dir (Just (CChangeT (Direc Ultima off1) (Direc Ultima off2))) st = 
 		ejecutar_comando_change_automatico (maximo + offset1) (maximo + offset2) st
@@ -1464,6 +1486,15 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 
+
+	-- DEFAULT
+	ejecutar_comando_change_con_dos_dir com st = 
+		ejecutar_comando_change_automatico maximo (maximo + 2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+	
+
 	ejecutar_comando_change_automatico :: Int -> Int -> State -> (String, State)
 	ejecutar_comando_change_automatico indice1 indice2 st
 		| indice1 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux))	
@@ -1480,6 +1511,8 @@ module Comandos where
 	borrar_lineas :: Int -> Int -> [a] -> [a]
 	borrar_lineas indice1 indice2 buf = take (indice1-1) buf ++ drop indice2 buf
 
+
+	-- *********************************************************************************************** --
 	ejecutar_comando_yank_con_dos_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_yank_con_dos_dir (Just (CYankT (Direc Ultima off1) (Direc Ultima off2))) st = 
 		ejecutar_comando_yank_automatico (maximo + offset1) (maximo + offset2) st
@@ -1594,6 +1627,15 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 
+
+	-- DEFAULT
+	ejecutar_comando_yank_con_dos_dir com st = 
+		ejecutar_comando_yank_automatico maximo (maximo + 2) st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+
+
 	ejecutar_comando_yank_automatico :: Int -> Int -> State -> (String, State)
 	ejecutar_comando_yank_automatico indice1 indice2 st
 		| indice1 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'y', nom_arch, papelera, aux))	
@@ -1610,6 +1652,8 @@ module Comandos where
 	obtener_lineas_yank a b [] = []
 	obtener_lineas_yank a b buf = drop (a-1) $ take b buf
 
+
+	-- *********************************************************************************************** --
 	ejecutar_comando_join_con_dos_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_join_con_dos_dir (Just (CJoinT (Direc Ultima off1) (Direc Ultima off2))) st = 
 		ejecutar_comando_join_automatico (maximo + offset1) (maximo + offset2) st
@@ -1724,6 +1768,15 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 
+
+	-- DEFAULT
+	ejecutar_comando_join_con_dos_dir com st = 
+		ejecutar_comando_join_automatico (maximo + 2) maximo st
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+	
+
 	ejecutar_comando_join_automatico :: Int -> Int -> State -> (String, State)
 	ejecutar_comando_join_automatico indice1 indice2 st
 		| indice1 > maximo	= ("?\n", (linea, buf, modo, esta_modificado, 'j', nom_arch, papelera, aux))	
@@ -1744,6 +1797,7 @@ module Comandos where
 	unir_lineas_aux (x:xs) = x ++ unir_lineas_aux xs
 
 
+	-- *********************************************************************************************** --
 	ejecutar_comando_move_con_dos_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc Ultima off1) (Direc Ultima off2) dir3)) st = 
 		ejecutar_comando_move_automatico (maximo + offset1) (maximo + offset2) st dir3
@@ -1858,6 +1912,15 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 
+
+	-- DEFAULT
+	ejecutar_comando_move_con_dos_dir com st = 
+		ejecutar_comando_move_automatico (maximo + 2) maximo st (Direc Ultima [])
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+	
+
 	ejecutar_comando_move_automatico :: Int -> Int -> State -> Direc -> (String, State)
 	ejecutar_comando_move_automatico indice1 indice2 st dir3
 		| indice1 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'm', nom_arch, papelera, aux))	
@@ -1921,6 +1984,8 @@ module Comandos where
 		| i3 < i1 	= i3 + i2 - i1
 		| i3 >= i2 	= i3 
 
+
+	-- *********************************************************************************************** --
 	ejecutar_comando_transfer_con_dos_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc Ultima off1) (Direc Ultima off2) dir3)) st = 
 		ejecutar_comando_transfer_automatico (maximo + offset1) (maximo + offset2) st dir3
@@ -2035,6 +2100,15 @@ module Comandos where
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
 
+
+	-- DEFAULT
+	ejecutar_comando_transfer_con_dos_dir com st = 
+		ejecutar_comando_transfer_automatico (maximo + 2) maximo st (Direc Ultima [])
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
+			maximo = length buf
+	
+
 	ejecutar_comando_transfer_automatico :: Int -> Int -> State -> Direc -> (String, State)
 	ejecutar_comando_transfer_automatico indice1 indice2 st dir3
 		| indice1 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 't', nom_arch, papelera, aux))	
@@ -2088,6 +2162,7 @@ module Comandos where
 			a_transfer = (drop (indice1 - 1) (take indice2 buf)) 
 
 
+	-- *********************************************************************************************** --
 	-- *** *** *** *** *** *** --
 	-- Funciones auxiliares
 	-- *** *** *** *** *** *** --

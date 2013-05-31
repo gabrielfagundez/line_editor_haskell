@@ -69,7 +69,7 @@ module Main(main) where
 			Nothing 	-> False
 			Just c 		-> case c of
 				CExitIncond 				-> True
-				CExit 							-> not(mod)
+				CExit 							-> True --not(mod)
 				_ 									-> False
 
 
