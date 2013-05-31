@@ -4,6 +4,8 @@ module Main(main) where
 	import System.Environment
 	import Data.List
 
+	import System.Directory
+
 	import ActionParser
 	import ArgsParser
 	import ParseLib
@@ -12,10 +14,37 @@ module Main(main) where
 	-- Funcion Principal
 	main :: IO ()
 	main = do
-		args 		<- getArgs
-		buffer 	<- getLines $ head args
-		edi (length buffer, buffer, ModoComando, False, 'I', head args, [], 0) False
-
+		args <- getArgs
+		-- Verifico que haya al menos 1 argumento
+		if (length args == 0)
+			then do
+				putStr "edi: missing file path\n"
+				return ()
+		else do
+			-- Verifico si el path es un directorio
+			existeDir <- doesDirectoryExist (head args)
+			if (existeDir) 
+				then do 
+					putStr "edi: file path is a directory\n"
+					return ()
+			else do
+				-- Verifico que el path del file es valido
+				existeDir <- existFileDirectory (head args)
+				if (not existeDir) 
+					then do 
+						putStr "edi: directory file path not exist\n"
+						return ()
+				else do
+					-- Verifico que el archivo exista
+					existeFile <- doesFileExist (head args)
+					if (existeFile) 
+						then do 
+							buffer 	<- getLines $ head args
+							edi (length buffer, buffer, ModoComando, False, 'I', head args, [], 0) False
+					else do
+						putStr (head args)
+						putStr ": No such file or directory\n"
+						edi (0, [], ModoComando, False, 'N', head args, [], 0) False
 
 	-- *** *** *** *** *** *** --
 	-- Funciones que componen el main
@@ -56,6 +85,24 @@ module Main(main) where
 	getLines path = do contents <- readFile path
 	                   return (lines contents)
 
+	existFileDirectory:: FilePath -> IO Bool
+	existFileDirectory path = existeDir
+		where
+			splitPath = split path '/'
+			pathAux = concatAux (take ((length splitPath) - 1) splitPath) '/'
+			existeDir = doesDirectoryExist pathAux
+
+	concatAux :: [String] -> Char -> String
+	concatAux [] _ = []
+	concatAux (x:xs) char = x ++ [char] ++ concatAux xs char	
+
+	split :: String -> Char -> [String]
+	split [] delim = [""]
+	split (c:cs) delim
+	   | c == delim = "" : rest
+	   | otherwise = (c : head rest) : tail rest
+	   where
+	       rest = split cs delim
 
 	-- *** *** *** *** *** *** --
 	-- Funciones auxiliares
@@ -135,4 +182,3 @@ module Main(main) where
 	borrar_espacios (x:xs) _
 		| x == ' '			= borrar_espacios xs ModoComando
 		| otherwise 		= x : borrar_espacios xs ModoComando
-
