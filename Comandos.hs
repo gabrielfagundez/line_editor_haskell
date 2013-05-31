@@ -39,6 +39,7 @@ module Comandos where
 	      [(e,"n"), (f,"np")]		-> (Just e, 'n')
 	      [(e,"n"), (f,"nn")]		-> (Just e, 'n')
 	      [(e,""), (f,"n")]			-> (Just e, '-')
+	      [(e,""), (f,"")]			-> (Just e, '-')
 	      _        		-> (Nothing, '-')
 
 	-- *** *** *** *** *** *** --
@@ -81,7 +82,7 @@ module Comandos where
 	comando_escribir = (action_parser_cond 'w') `build` const CWrite
 
 	comando_escribir_con_argumento :: Parse Char Comando
-	comando_escribir_con_argumento = ((action_parser_cond 'w') >*> (args_parser)) `build` \(_, arg) -> CWriteArg arg 
+	comando_escribir_con_argumento = ((action_parser_cond 'w') >*> (token ' ') >*> (args_parser)) `build` \(_, (_, arg)) -> CWriteArg arg 
 										
 	comando_imprimir_actual :: Parse Char Comando
 	comando_imprimir_actual = (action_parser_cond 'p') `build` const CPrintCurr
