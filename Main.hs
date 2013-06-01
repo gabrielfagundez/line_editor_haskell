@@ -28,23 +28,37 @@ module Main(main) where
 					putStr "edi: file path is a directory\n"
 					return ()
 			else do
-				-- Verifico que el path del file es valido
-				existeDir <- existFileDirectory (head args)
-				if (not existeDir) 
-					then do 
-						putStr "edi: directory file path not exist\n"
-						return ()
+				-- Verifico si se pasa solo la ruta al file
+				if(length (split (head args) '/') == 1) 
+					then do
+						-- Verifico que el archivo exista
+						existeFile <- doesFileExist (head args)
+						if (existeFile) 
+							then do 
+								buffer 	<- getLines $ head args
+								edi (length buffer, buffer, ModoComando, False, 'I', head args, [], 0) False
+						else do
+							putStr (head args)
+							putStr ": No such file or directory\n"
+							edi (0, [], ModoComando, False, 'N', head args, [], 0) False
 				else do
-					-- Verifico que el archivo exista
-					existeFile <- doesFileExist (head args)
-					if (existeFile) 
+					-- Verifico que el path del file es valido
+					existeDir <- existFileDirectory (head args)
+					if (not existeDir) 
 						then do 
-							buffer 	<- getLines $ head args
-							edi (length buffer, buffer, ModoComando, False, 'I', head args, [], 0) False
+							putStr "edi: directory file path not exist\n"
+							return ()
 					else do
-						putStr (head args)
-						putStr ": No such file or directory\n"
-						edi (0, [], ModoComando, False, 'N', head args, [], 0) False
+						-- Verifico que el archivo exista
+						existeFile <- doesFileExist (head args)
+						if (existeFile) 
+							then do 
+								buffer 	<- getLines $ head args
+								edi (length buffer, buffer, ModoComando, False, 'I', head args, [], 0) False
+						else do
+							putStr (head args)
+							putStr ": No such file or directory\n"
+							edi (0, [], ModoComando, False, 'N', head args, [], 0) False
 
 	-- *** *** *** *** *** *** --
 	-- Funciones que componen el main
@@ -116,7 +130,7 @@ module Main(main) where
 			Nothing 	-> False
 			Just c 		-> case c of
 				CExitIncond 				-> True
-				CExit 							-> True --not(mod)
+				CExit 							-> not(mod)
 				_ 									-> False
 
 
