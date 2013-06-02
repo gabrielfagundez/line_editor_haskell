@@ -682,8 +682,8 @@ module Comandos where
 	borrar_linea a st 
 		| a <= 0 				= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux))
 		| a > maximo 		= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux))
-		| a == maximo		= ("", (a - 1, borrar_linea_buf a buf, modo, True, 'd', nom_arch, papelera, aux))
-		| otherwise			= ("", (a, borrar_linea_buf a buf, modo, True, 'd', nom_arch, papelera, aux))
+		| a == maximo		= ("", (a - 1, borrar_linea_buf a buf, modo, True, 'd', obtener_lineas_papelera a a buf, papelera, aux))
+		| otherwise			= ("", (a, borrar_linea_buf a buf, modo, True, 'd', nom_arch, obtener_lineas_papelera a a buf, aux))
 		where  	
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1365,8 +1365,8 @@ module Comandos where
 		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux))	
 		|	indice2 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux))	
 		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux))	
-		| indice2 /= maximo 			= ("", ((maximo - (indice2 - indice1)) - 2, borrar_lineas indice1 indice2 buf, modo, True, 'd', nom_arch, papelera, aux))
-		| otherwise 							= ("", (indice1 - 1, borrar_lineas indice1 indice2 buf, modo, True, 'd', nom_arch, papelera, aux))
+		| indice2 /= maximo 			= ("", ((maximo - (indice2 - indice1)) - 2, borrar_lineas indice1 indice2 buf, modo, True, 'd', nom_arch, obtener_lineas_papelera indice1 indice2 buf, aux))
+		| otherwise 							= ("", (indice1 - 1, borrar_lineas indice1 indice2 buf, modo, True, 'd', nom_arch, obtener_lineas_papelera indice1 indice2 buf, aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1503,7 +1503,7 @@ module Comandos where
 		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux))	
 		|	indice2 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux))	
 		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux))	
-		| otherwise 							= ("", (indice1, borrar_lineas indice1 indice2 buf, ModoInsertar, True, 'c', nom_arch, papelera, aux))
+		| otherwise 							= ("", (indice1, borrar_lineas indice1 indice2 buf, ModoInsertar, True, 'c', nom_arch, obtener_lineas_papelera indice1 indice2 buf, aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
@@ -1644,14 +1644,14 @@ module Comandos where
 		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'y', nom_arch, papelera, aux))	
 		|	indice2 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'y', nom_arch, papelera, aux))	
 		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 'y', nom_arch, papelera, aux))	
-		| otherwise					 			= ("", (linea, buf, modo, esta_modificado, 'y', nom_arch, obtener_lineas_yank indice1 indice2 buf, aux))
+		| otherwise					 			= ("", (linea, buf, modo, esta_modificado, 'y', nom_arch, obtener_lineas_papelera indice1 indice2 buf, aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
 
-	obtener_lineas_yank :: Int -> Int -> [String] -> [String]
-	obtener_lineas_yank a b [] = []
-	obtener_lineas_yank a b buf = drop (a-1) $ take b buf
+	obtener_lineas_papelera :: Int -> Int -> [String] -> [String]
+	obtener_lineas_papelera a b [] = []
+	obtener_lineas_papelera a b buf = drop (a-1) $ take b buf
 
 
 	-- *********************************************************************************************** --
@@ -1785,7 +1785,7 @@ module Comandos where
 		| indice1 <= 0		= ("?\n", (linea, buf, modo, esta_modificado, 'j', nom_arch, papelera, aux))	
 		| indice2 <= 0		= ("?\n", (linea, buf, modo, esta_modificado, 'j', nom_arch, papelera, aux))	
 		| indice1 > indice2 = ("?\n", (linea, buf, modo, esta_modificado, 'j', nom_arch, papelera, aux))	
-		| otherwise 		= ("", (indice1, unir_lineas indice1 indice2 buf, modo, True, 'j', nom_arch, papelera, aux))
+		| otherwise 		= ("", (indice1, unir_lineas indice1 indice2 buf, modo, True, 'j', nom_arch, obtener_lineas_papelera indice1 indice2 buf, aux))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux) = st
 			maximo = length buf
