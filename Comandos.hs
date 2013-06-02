@@ -333,36 +333,36 @@ module Comandos where
 
 	-- *********************************************************************************************** --
 	ejecutar_comando_write_con_dir :: Maybe Comando -> State -> (String, State)
-	ejecutar_comando_write_con_dir (Just (CChangeDir (Direc Ultima off))) st = 
+	ejecutar_comando_write_con_dir (Just (CWriteD (Direc Ultima off))) st = 
 		write_linea (maximo + offset) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset = foldr (+) 0 off 
-	ejecutar_comando_write_con_dir (Just (CChangeDir (Direc Corriente off))) st =
+	ejecutar_comando_write_con_dir (Just (CWriteD (Direc Corriente off))) st =
 		write_linea (linea + offset) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset = foldr (+) 0 off 
-	ejecutar_comando_write_con_dir (Just (CChangeDir (Direc (Abs a) off))) st =
+	ejecutar_comando_write_con_dir (Just (CWriteD (Direc (Abs a) off))) st =
 		write_linea (a + offset) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset = foldr (+) 0 off 
-	ejecutar_comando_write_con_dir (Just (CChangeDir (Direc (Rel a) off))) st =
+	ejecutar_comando_write_con_dir (Just (CWriteD (Direc (Rel a) off))) st =
 		write_linea (a + linea + offset) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset = foldr (+) 0 off 
-	ejecutar_comando_write_con_dir (Just (CChangeDir (Direc Todo off))) st =
+	ejecutar_comando_write_con_dir (Just (CWriteD (Direc Todo off))) st =
 		write_linea maximo st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
-	ejecutar_comando_write_con_dir (Just (CChangeDir (Direc TdoRelativo off))) st =
+	ejecutar_comando_write_con_dir (Just (CWriteD (Direc TdoRelativo off))) st =
 		write_linea maximo st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
@@ -377,9 +377,9 @@ module Comandos where
 
 	write_linea :: Int -> State -> (String, State)
 	write_linea indice st 
-		| indice > maximo 		= ("\n"  ,(linea, buf, modo, esta_modificado, 'l', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
-		| indice <= 0			= ("\n" ,(linea, buf, modo, esta_modificado, 'l', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
-		| otherwise 			= (obtener_linea indice buf ,(indice, buf, modo, esta_modificado, 'w', nom_arch, papelera, aux, buffer_insert, [buf !! (indice-1)], auxiliar2))
+		| indice > maximo 		= ("?\n" ,(linea, buf, modo, esta_modificado, 'l', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
+		| indice <= 0			= ("?\n" ,(linea, buf, modo, esta_modificado, 'l', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
+		| otherwise 			= ("" ,(indice, buf, modo, esta_modificado, 'w', nom_arch, papelera, aux, buffer_insert, [buf !! (indice-1)], auxiliar2))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
@@ -1441,112 +1441,112 @@ module Comandos where
 
 	-- *********************************************************************************************** --
 	ejecutar_comando_write_con_dos_dir :: Maybe Comando -> State -> (String, State)
-	ejecutar_comando_write_con_dos_dir (Just (CChangeT (Direc Ultima off1) (Direc Ultima off2))) st = 
+	ejecutar_comando_write_con_dos_dir (Just (CWriteT (Direc Ultima off1) (Direc Ultima off2))) st = 
 		ejecutar_comando_write_automatico (maximo + offset1) (maximo + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
-	ejecutar_comando_write_con_dos_dir (Just (CChangeT (Direc Corriente off1) (Direc Corriente off2))) st = 
+	ejecutar_comando_write_con_dos_dir (Just (CWriteT (Direc Corriente off1) (Direc Corriente off2))) st = 
 		ejecutar_comando_write_automatico (linea + offset1) (linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
-	ejecutar_comando_write_con_dos_dir (Just (CChangeT (Direc (Abs a) off1) (Direc (Abs b) off2))) st = 
+	ejecutar_comando_write_con_dos_dir (Just (CWriteT (Direc (Abs a) off1) (Direc (Abs b) off2))) st = 
 		ejecutar_comando_write_automatico (a + offset1) (b + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
-	ejecutar_comando_write_con_dos_dir (Just (CChangeT (Direc (Rel a) off1) (Direc (Rel b) off2))) st = 
+	ejecutar_comando_write_con_dos_dir (Just (CWriteT (Direc (Rel a) off1) (Direc (Rel b) off2))) st = 
 		ejecutar_comando_write_automatico (a + linea + offset1) (linea + b + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
-	ejecutar_comando_write_con_dos_dir (Just (CChangeT (Direc Corriente off1) (Direc Ultima off2))) st = 
+	ejecutar_comando_write_con_dos_dir (Just (CWriteT (Direc Corriente off1) (Direc Ultima off2))) st = 
 		ejecutar_comando_write_automatico (linea + offset1) (maximo + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
-	ejecutar_comando_write_con_dos_dir (Just (CChangeT (Direc Ultima off1) (Direc Corriente off2))) st = 
+	ejecutar_comando_write_con_dos_dir (Just (CWriteT (Direc Ultima off1) (Direc Corriente off2))) st = 
 		ejecutar_comando_write_automatico (maximo + offset1) (linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
-	ejecutar_comando_write_con_dos_dir (Just (CChangeT (Direc (Abs a) off1) (Direc (Rel b) off2))) st = 
+	ejecutar_comando_write_con_dos_dir (Just (CWriteT (Direc (Abs a) off1) (Direc (Rel b) off2))) st = 
 		ejecutar_comando_write_automatico (a + offset1) (linea + b + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
-	ejecutar_comando_write_con_dos_dir (Just (CChangeT (Direc (Rel a) off1) (Direc (Abs b) off2))) st = 
+	ejecutar_comando_write_con_dos_dir (Just (CWriteT (Direc (Rel a) off1) (Direc (Abs b) off2))) st = 
 		ejecutar_comando_write_automatico (a + linea + offset1) (b + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
-	ejecutar_comando_write_con_dos_dir (Just (CChangeT (Direc Ultima off1) (Direc (Rel b) off2))) st = 
+	ejecutar_comando_write_con_dos_dir (Just (CWriteT (Direc Ultima off1) (Direc (Rel b) off2))) st = 
 		ejecutar_comando_write_automatico (maximo + offset1) (linea + b + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
-	ejecutar_comando_write_con_dos_dir (Just (CChangeT (Direc (Rel a) off1) (Direc Ultima off2))) st = 
+	ejecutar_comando_write_con_dos_dir (Just (CWriteT (Direc (Rel a) off1) (Direc Ultima off2))) st = 
 		ejecutar_comando_write_automatico (a + linea + offset1) (maximo + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
-	ejecutar_comando_write_con_dos_dir (Just (CChangeT (Direc Ultima off1) (Direc (Abs b) off2))) st = 
+	ejecutar_comando_write_con_dos_dir (Just (CWriteT (Direc Ultima off1) (Direc (Abs b) off2))) st = 
 		ejecutar_comando_write_automatico (maximo + offset1) (b + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
-	ejecutar_comando_write_con_dos_dir (Just (CChangeT (Direc (Abs a) off1) (Direc Ultima off2))) st = 
+	ejecutar_comando_write_con_dos_dir (Just (CWriteT (Direc (Abs a) off1) (Direc Ultima off2))) st = 
 		ejecutar_comando_write_automatico (a + offset1) (maximo + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
-	ejecutar_comando_write_con_dos_dir (Just (CChangeT (Direc Corriente off1) (Direc (Rel b) off2))) st = 
+	ejecutar_comando_write_con_dos_dir (Just (CWriteT (Direc Corriente off1) (Direc (Rel b) off2))) st = 
 		ejecutar_comando_write_automatico (linea + offset1) (linea + b + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
-	ejecutar_comando_write_con_dos_dir (Just (CChangeT (Direc (Rel a) off1) (Direc Corriente off2))) st = 
+	ejecutar_comando_write_con_dos_dir (Just (CWriteT (Direc (Rel a) off1) (Direc Corriente off2))) st = 
 		ejecutar_comando_write_automatico (a + linea + offset1) (linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
-	ejecutar_comando_write_con_dos_dir (Just (CChangeT (Direc Corriente off1) (Direc (Abs b) off2))) st = 
+	ejecutar_comando_write_con_dos_dir (Just (CWriteT (Direc Corriente off1) (Direc (Abs b) off2))) st = 
 		ejecutar_comando_write_automatico (linea + offset1) (b + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
 			offset1 = foldr (+) 0 off1
 			offset2 = foldr (+) 0 off2
-	ejecutar_comando_write_con_dos_dir (Just (CChangeT (Direc (Abs a) off1) (Direc Corriente off2))) st = 
+	ejecutar_comando_write_con_dos_dir (Just (CWriteT (Direc (Abs a) off1) (Direc Corriente off2))) st = 
 		ejecutar_comando_write_automatico (a + offset1) (linea + offset2) st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
