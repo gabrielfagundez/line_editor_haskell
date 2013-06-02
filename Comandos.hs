@@ -10,7 +10,8 @@ module Comandos where
 									CPrintT Direc Direc |CShowT Direc Direc | CDelete Direc | CDeleteCurr | CDeleteT Direc Direc |
 									CChangeT Direc Direc | CChange Direc | CChangeCurr | CYankCurr | CYankT Direc Direc | CYank Direc |
 									CPasteCurr | CPaste Direc | CChangeDir Direc | CEqual Direc | CEqualCurr | CMoveT Direc Direc Direc | 
-									CTransferT Direc Direc Direc | CMove Direc Direc | CTransfer Direc Direc | CJoin Direc | CJoinT Direc Direc
+									CTransferT Direc Direc Direc | CMove Direc Direc | CTransfer Direc Direc | CJoin Direc | CJoinT Direc Direc |
+									CMoveUn Direc | CMoveDos Direc Direc | CMoveCurren Direc
 
 		deriving (Eq, Show)
 
@@ -59,7 +60,8 @@ module Comandos where
 						`alt` comando_pegar_con_dir `alt` comando_mostrar_numero_linea
 						`alt` comando_mostrar_numer_linea_actual `alt` comando_mover_con_dos_dir `alt` comando_transferir_con_dos_dir
 						`alt` comando_change_actual `alt` comando_cambiar_direccion `alt` comando_move_una_dir
-						`alt` comando_transfer_una_dir `alt` comando_juntar_con_dir `alt` comando_juntar_con_dos_dir
+						`alt` comando_transfer_una_dir `alt` comando_juntar_con_dir `alt` comando_juntar_con_dos_dir `alt` comando_mover_una_dir
+						`alt` comando_mover_dos_dir `alt` comando_move_curren
  
 
 	-- *** *** *** *** *** *** --
@@ -108,12 +110,18 @@ module Comandos where
 	comando_move_una_dir :: Parse Char Comando
 	comando_move_una_dir = (directions_parser >*> (action_parser_cond 'm') >*> directions_parser) `build` \(dir1,(_ ,dir2)) -> CMove dir1 dir2
 
+	comando_move_curren :: Parse Char Comando
+	comando_move_curren = ((action_parser_cond 'm') >*> directions_parser)  `build` \(_, dir) -> CMoveCurren dir
+
 	comando_transfer_una_dir :: Parse Char Comando
 	comando_transfer_una_dir = (directions_parser >*> (action_parser_cond 't') >*> directions_parser) `build` \(dir1,(_ ,dir2)) -> CTransfer dir1 dir2
 
 
 	comando_imprimir_con_direccion :: Parse Char Comando
 	comando_imprimir_con_direccion = (directions_parser >*> (action_parser_cond 'p')) `build` \(dir, _) -> CPrint dir
+
+	comando_mover_una_dir :: Parse Char Comando
+	comando_mover_una_dir = (directions_parser >*> (action_parser_cond 'm')) `build` \(dir, _) -> CMoveUn dir
 
 	comando_insertar_con_direccion :: Parse Char Comando
 	comando_insertar_con_direccion = (directions_parser >*> (action_parser_cond 'i')) `build` \(dir, _) -> CInsert dir
@@ -147,6 +155,9 @@ module Comandos where
 
 	comando_imprimir_con_dos_dir :: Parse Char Comando
 	comando_imprimir_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'p')) `build` \(dir1,(_,(dir2, _))) -> CPrintT dir1 dir2
+
+	comando_mover_dos_dir :: Parse Char Comando
+	comando_mover_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'm')) `build` \(dir1,(_,(dir2, _))) -> CMoveDos dir1 dir2
 
 	comando_mostrar_linea_con_dos_dir :: Parse Char Comando
 	comando_mostrar_linea_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'n')) `build` \(dir1,(_,(dir2, _))) -> CShowT dir1 dir2
@@ -222,6 +233,8 @@ module Comandos where
 	ejecutar_comando_modo_comando (Just (CChangeDir direc)) st 	= ejecutar_comando_change_dir (Just (CChangeDir direc)) st
 	ejecutar_comando_modo_comando (Just (CEqual direc)) st 			= ejecutar_comando_equal_con_dir (Just (CEqual direc)) st
 	ejecutar_comando_modo_comando (Just (CJoin direc)) st 			= ejecutar_comando_join_con_dir (Just (CJoin direc)) st
+	ejecutar_comando_modo_comando (Just (CMoveUn direc)) st 		= ejecutar_comando_move_una_dir (Just (CMoveUn direc)) st
+	ejecutar_comando_modo_comando (Just (CMoveCurren direc)) st = ejecutar_comando_move_current (Just (CMoveCurren direc)) st
 
 	ejecutar_comando_modo_comando (Just (CPrintT direc1 direc2)) st 		= ejecutar_comando_print_con_dos_dir (Just (CPrintT direc1 direc2)) st
  	ejecutar_comando_modo_comando (Just (CShowT direc1 direc2)) st 			= ejecutar_comando_show_con_dos_dir (Just (CShowT direc1 direc2)) st
@@ -229,6 +242,7 @@ module Comandos where
  	ejecutar_comando_modo_comando (Just (CChangeT direc1 direc2)) st 		= ejecutar_comando_change_con_dos_dir (Just (CChangeT direc1 direc2)) st
  	ejecutar_comando_modo_comando (Just (CYankT direc1 direc2)) st  		= ejecutar_comando_yank_con_dos_dir (Just (CYankT direc1 direc2)) st
 	ejecutar_comando_modo_comando (Just (CJoinT direc1 direc2)) st  		= ejecutar_comando_join_con_dos_dir (Just (CJoinT direc1 direc2)) st
+	ejecutar_comando_modo_comando (Just (CMoveDos direc1 direc2)) st 		= ejecutar_comando_move_dos_dir (Just (CMoveDos direc1 direc2)) st
  	
  	ejecutar_comando_modo_comando (Just (CMoveT direc1 direc2 direc3)) st  			= ejecutar_comando_move_con_dos_dir (Just (CMoveT direc1 direc2 direc3)) st
  	ejecutar_comando_modo_comando (Just (CTransferT direc1 direc2 direc3)) st  	= ejecutar_comando_transfer_con_dos_dir (Just (CTransferT direc1 direc2 direc3)) st
@@ -1365,8 +1379,8 @@ module Comandos where
 		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))	
 		|	indice2 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))	
 		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 'd', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))	
-		| indice2 /= maximo 			= ("", ((maximo - (indice2 - indice1)) - 2, borrar_lineas indice1 indice2 buf, modo, True, 'd', nom_arch, obtener_lineas_papelera indice1 indice2 buf, aux, buffer_insert, auxiliar1, auxiliar2))
-		| otherwise 							= ("", (indice1 - 1, borrar_lineas indice1 indice2 buf, modo, True, 'd', nom_arch, obtener_lineas_papelera indice1 indice2 buf, aux, buffer_insert, auxiliar1, auxiliar2))
+		| indice2 == maximo 			= ("", ((maximo - (indice2 - indice1)) - 1, borrar_lineas indice1 indice2 buf, modo, True, 'd', nom_arch, obtener_lineas_papelera indice1 indice2 buf, aux, buffer_insert, auxiliar1, auxiliar2))
+		| otherwise 							= ("", (indice1, borrar_lineas indice1 indice2 buf, modo, True, 'd', nom_arch, obtener_lineas_papelera indice1 indice2 buf, aux, buffer_insert, auxiliar1, auxiliar2))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
@@ -1503,11 +1517,11 @@ module Comandos where
 		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))	
 		|	indice2 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))	
 		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))	
+		| indice2 /= maximo 			= ("", ((maximo - (indice2 - indice1)) - 1, borrar_lineas indice1 indice2 buf, ModoInsertar, True, 'c', nom_arch, obtener_lineas_papelera indice1 indice2 buf, aux, buffer_insert, auxiliar1, auxiliar2))
 		| otherwise 							= ("", (indice1, borrar_lineas indice1 indice2 buf, ModoInsertar, True, 'c', nom_arch, obtener_lineas_papelera indice1 indice2 buf, aux, buffer_insert, auxiliar1, auxiliar2))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
-
 
 	borrar_lineas :: Int -> Int -> [a] -> [a]
 	borrar_lineas indice1 indice2 buf = take (indice1-1) buf ++ drop indice2 buf
@@ -1799,6 +1813,17 @@ module Comandos where
 
 
 	-- *********************************************************************************************** --
+	ejecutar_comando_move_una_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_move_una_dir (Just (CMoveUn direc)) st = 
+		ejecutar_comando_move_con_dos_dir (Just (CMoveT direc direc (Direc Corriente []))) st
+
+	ejecutar_comando_move_dos_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_move_dos_dir (Just (CMoveDos direc1 direc2)) st = 
+		ejecutar_comando_move_con_dos_dir (Just (CMoveT direc1 direc2 (Direc Corriente []))) st
+
+	ejecutar_comando_move_current (Just (CMoveCurren direc)) st = 
+		ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc Corriente []) (Direc Corriente []) direc)) st
+
 	ejecutar_comando_move_con_dos_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_move_con_dos_dir (Just (CMoveT (Direc Ultima off1) (Direc Ultima off2) dir3)) st = 
 		ejecutar_comando_move_automatico (maximo + offset1) (maximo + offset2) st dir3
@@ -1982,7 +2007,7 @@ module Comandos where
 
 	nueva_linea :: Int -> Int -> Int -> Int
 	nueva_linea i1 i2 i3 
-		| i3 < i1 	= i3 + i2 - i1
+		| i3 < i1 	= i3 + i2 - i1 + 1
 		| i3 >= i2 	= i3 
 
 
