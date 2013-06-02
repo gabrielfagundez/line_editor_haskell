@@ -85,8 +85,8 @@ module Main(main) where
 				putStr argumento
 
 
-				let (_, buf, _, _, comando_ejecutado, nom_arch, _, _, _, _, _)	 		= nuevo_estado
-				salvar comando_ejecutado nom_arch buf
+				let (_, buf, _, _, comando_ejecutado, nom_arch, _, _, _, buffer_write, _)	 		= nuevo_estado
+				salvar comando_ejecutado nom_arch buffer_write
 				
 				-- Llamada recursiva a si mismo con estado modificado
 				edi (nuevo_estado) (salir comando_leido buf_mod (modo_actual == ModoInsertar))
@@ -167,12 +167,13 @@ module Main(main) where
 	-- Funcion que chequea si debe imprimir conteo de palabras y lo retorna
 	imprimir_cantidad_palabras :: Char -> State -> (String, State)
 	imprimir_cantidad_palabras ultimo_comando estado
-		| ultimo_comando == 'I'			= (cantidad ++ "\n", (linea, buf, modo, esta_modificado, 'G', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
-		| ultimo_comando == 'w'			= (cantidad ++ "\n", (linea, buf, modo, esta_modificado, 'G', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
+		| ultimo_comando == 'I'			= (cantidadBuffer ++ "\n", (linea, buf, modo, esta_modificado, 'G', nom_arch, papelera, aux, buffer_insert, buffer_write, auxiliar2))
+		| ultimo_comando == 'w'			= (cantidad ++ "\n", (linea, buf, modo, esta_modificado, 'G', nom_arch, papelera, aux, buffer_insert, buffer_write, auxiliar2))
 		| otherwise									= ("", estado)
 		where 
-			(linea, buf, modo, esta_modificado, i, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = estado 
-			cantidad = show $ cantidad_palabras buf
+			(linea, buf, modo, esta_modificado, i, nom_arch, papelera, aux, buffer_insert, buffer_write, auxiliar2) = estado 
+			cantidad = show $ cantidad_palabras buffer_write
+			cantidadBuffer = show $ cantidad_palabras buf
 
 	cantidad_palabras :: [String] -> Int
 	cantidad_palabras [] 			= 0
