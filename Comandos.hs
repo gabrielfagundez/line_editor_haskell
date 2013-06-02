@@ -177,20 +177,20 @@ module Comandos where
 	-- Ejecucion en modo insertar
 	ejecutar_comando_modo_insertar :: String -> State -> (String, State)
 	ejecutar_comando_modo_insertar "." st 
-		| ult_com == 'i' 													= ("", (linea + aux - 1, insertar linea papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0, buffer_insert, auxiliar1, auxiliar2))
-		| ult_com == 'a'						 							= ("", (linea + aux, insertar (linea+1) papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0, buffer_insert, auxiliar1, auxiliar2))		
-		| ult_com == 'c'						 							= ("", (linea + aux - 1, insertar linea papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0, buffer_insert, auxiliar1, auxiliar2))		
+		| ult_com == 'i' 													= ("", (linea + aux - 1, insertar linea buffer_insert buf, ModoComando, esta_modificado, ult_com, nom_arch, papelera, 0, [], auxiliar1, auxiliar2))
+		| ult_com == 'a'						 							= ("", (linea + aux, insertar (linea+1) buffer_insert buf, ModoComando, esta_modificado, ult_com, nom_arch, papelera, 0, [], auxiliar1, auxiliar2))		
+		| ult_com == 'c'						 							= ("", (linea + aux - 1, insertar linea buffer_insert buf, ModoComando, esta_modificado, ult_com, nom_arch, papelera, 0, [], auxiliar1, auxiliar2))		
 		| otherwise 															= error "Modo insertar con comando anterior no definido."--("", (linea + aux - 1, insertar linea papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0, buffer_insert, auxiliar1, auxiliar2))
 		where (linea, buf, _, esta_modificado, ult_com, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 	ejecutar_comando_modo_insertar string st 
-		| ult_com == 'i' 		= ("", (linea, buf, modo, True, ult_com, nom_arch, nueva_papelera, aux + 1, buffer_insert, auxiliar1, auxiliar2))
-		| ult_com == 'a' 		= ("", (linea, buf, modo, True, ult_com, nom_arch, nueva_papelera, aux + 1, buffer_insert, auxiliar1, auxiliar2))
-		| ult_com == 'c' 		= ("", (linea, buf, modo, True, ult_com, nom_arch, nueva_papelera, aux + 1, buffer_insert, auxiliar1, auxiliar2))
+		| ult_com == 'i' 		= ("", (linea, buf, modo, True, ult_com, nom_arch, papelera, aux + 1, nuevo_buffer_insert, auxiliar1, auxiliar2))
+		| ult_com == 'a' 		= ("", (linea, buf, modo, True, ult_com, nom_arch, papelera, aux + 1, nuevo_buffer_insert, auxiliar1, auxiliar2))
+		| ult_com == 'c' 		= ("", (linea, buf, modo, True, ult_com, nom_arch, papelera, aux + 1, nuevo_buffer_insert, auxiliar1, auxiliar2))
 		| otherwise 															= error "Modo insertar con comando anterior no definido."--("", (linea + aux - 1, insertar linea papelera buf, ModoComando, esta_modificado, ult_com, nom_arch, [], 0, buffer_insert, auxiliar1, auxiliar2))
 		where 
 			(linea, buf, modo, esta_modificado, ult_com, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			nueva_linea = linea + 1
-			nueva_papelera = papelera ++ [string]
+			nuevo_buffer_insert = buffer_insert ++ [string]
 
 
 	-- *********************************************************************************************** --
@@ -755,8 +755,8 @@ module Comandos where
 	borrar_linea_change a st 
 		| a < 0 				= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
 		| a > maximo 		= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
-		| a == 0			 	= ("", (1, borrar_linea_change_buf a buf, ModoInsertar, True, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
-		| otherwise			= ("", (a, borrar_linea_change_buf a buf, ModoInsertar, True, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
+		| a == 0			 	= ("", (1, borrar_linea_change_buf a buf, ModoInsertar, True, 'c', nom_arch, obtener_lineas_papelera a a buf, aux, buffer_insert, auxiliar1, auxiliar2))
+		| otherwise			= ("", (a, borrar_linea_change_buf a buf, ModoInsertar, True, 'c', nom_arch, obtener_lineas_papelera a a buf, aux, buffer_insert, auxiliar1, auxiliar2))
 		where  	
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 			maximo = length buf
