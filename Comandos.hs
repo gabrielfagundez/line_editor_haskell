@@ -243,8 +243,8 @@ module Comandos where
 	-- *********************************************************************************************** --
 	ejecutar_salir :: Maybe Comando -> State -> (String, State)
 	ejecutar_salir comando st
-		| (esta_modificado) && (ult_com /= 'q')		=	("", (linea, buf, modo, not esta_modificado, 'q', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
-		| otherwise																= ("", st)
+		| (esta_modificado)	=	("?\n", (linea, buf, modo, esta_modificado, 'q', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
+		| otherwise					= ("", st)
 		where (linea, buf, modo, esta_modificado, ult_com, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 
 	ejecutar_salir_incond :: Maybe Comando -> State -> (String, State) 
