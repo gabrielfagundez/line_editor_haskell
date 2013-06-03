@@ -11,7 +11,8 @@ module Comandos where
 									CChangeT Direc Direc | CChange Direc | CChangeCurr | CYankCurr | CYankT Direc Direc | CYank Direc |
 									CPasteCurr | CPaste Direc | CChangeDir Direc | CEqual Direc | CEqualCurr | CMoveT Direc Direc Direc | 
 									CTransferT Direc Direc Direc | CMove Direc Direc | CTransfer Direc Direc | CJoin Direc | CJoinT Direc Direc |
-									CMoveUn Direc | CMoveDos Direc Direc | CMoveCurren Direc
+									CMoveUn Direc | CMoveDos Direc Direc | CMoveCurren Direc |
+									CTransferUn Direc | CTransferDos Direc Direc | CTransferCurren Direc | CTransferSolo
 
 		deriving (Eq, Show)
 
@@ -66,9 +67,10 @@ module Comandos where
 						`alt` comando_pegar_con_dir `alt` comando_mostrar_numero_linea
 						`alt` comando_mostrar_numer_linea_actual `alt` comando_mover_con_dos_dir `alt` comando_transferir_con_dos_dir
 						`alt` comando_change_actual `alt` comando_cambiar_direccion `alt` comando_move_una_dir
-						`alt` comando_transfer_una_dir `alt` comando_juntar_con_dir `alt` comando_juntar_con_dos_dir `alt` comando_mover_una_dir
-						`alt` comando_mover_dos_dir `alt` comando_move_curren
- 
+						`alt` comando_transfer_una_dir `alt` comando_juntar_con_dir `alt` comando_juntar_con_dos_dir 
+						`alt` comando_mover_una_dir `alt` comando_mover_dos_dir `alt` comando_move_curren
+						`alt` comando_tra_una_dir `alt` comando_tra_dos_dir `alt` comando_tra_curren
+						`alt` comando_tra_solo
 
 	-- *** *** *** *** *** *** --
 	-- Funciones aplicadas a un unico tipo de comandos
@@ -107,6 +109,9 @@ module Comandos where
 	comando_copiar_actual :: Parse Char Comando
 	comando_copiar_actual = (action_parser_cond 'y') `build` const CYankCurr
 
+	comando_tra_solo :: Parse Char Comando
+	comando_tra_solo =  (action_parser_cond 't') `build` const CTransferSolo
+
 	comando_pegar_actual :: Parse Char Comando
 	comando_pegar_actual = (action_parser_cond 'x') `build` const CPasteCurr
 
@@ -122,6 +127,9 @@ module Comandos where
 	comando_move_curren :: Parse Char Comando
 	comando_move_curren = ((action_parser_cond 'm') >*> directions_parser)  `build` \(_, dir) -> CMoveCurren dir
 
+	comando_tra_curren :: Parse Char Comando
+	comando_tra_curren = ((action_parser_cond 't') >*> directions_parser)  `build` \(_, dir) -> CTransferCurren dir
+
 	comando_transfer_una_dir :: Parse Char Comando
 	comando_transfer_una_dir = (directions_parser >*> (action_parser_cond 't') >*> directions_parser) `build` \(dir1,(_ ,dir2)) -> CTransfer dir1 dir2
 
@@ -130,6 +138,9 @@ module Comandos where
 
 	comando_mover_una_dir :: Parse Char Comando
 	comando_mover_una_dir = (directions_parser >*> (action_parser_cond 'm')) `build` \(dir, _) -> CMoveUn dir
+
+	comando_tra_una_dir :: Parse Char Comando
+	comando_tra_una_dir = (directions_parser >*> (action_parser_cond 't')) `build` \(dir, _) -> CTransferUn dir
 
 	comando_insertar_con_direccion :: Parse Char Comando
 	comando_insertar_con_direccion = (directions_parser >*> (action_parser_cond 'i')) `build` \(dir, _) -> CInsert dir
@@ -169,6 +180,9 @@ module Comandos where
 
 	comando_mover_dos_dir :: Parse Char Comando
 	comando_mover_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'm')) `build` \(dir1,(_,(dir2, _))) -> CMoveDos dir1 dir2
+
+	comando_tra_dos_dir :: Parse Char Comando
+	comando_tra_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 't')) `build` \(dir1,(_,(dir2, _))) -> CTransferDos dir1 dir2
 
 	comando_mostrar_linea_con_dos_dir :: Parse Char Comando
 	comando_mostrar_linea_con_dos_dir = (directions_parser >*> (token ',') >*> directions_parser >*> (action_parser_cond 'n')) `build` \(dir1,(_,(dir2, _))) -> CShowT dir1 dir2
@@ -231,6 +245,7 @@ module Comandos where
 		| (comando == Just CYankCurr)															= ejecutar_comando_yank_current comando st
 		| (comando == Just CPasteCurr)														= ejecutar_comando_paste_current comando st
 		| (comando == Just CEqualCurr)														= ejecutar_comando_equal_actual comando st
+		| (comando == Just CTransferSolo)													= ejecutar_comando_tra_solo comando st
 	
 	ejecutar_comando_modo_comando (Just (CWriteArg arg)) st 		= ejecutar_comando_write_con_ruta (Just (CWriteArg arg)) st
 	ejecutar_comando_modo_comando (Just (CWriteD direc)) st 		= ejecutar_comando_write_con_dir (Just (CWriteD direc)) st
@@ -247,6 +262,8 @@ module Comandos where
 	ejecutar_comando_modo_comando (Just (CJoin direc)) st 			= ejecutar_comando_join_con_dir (Just (CJoin direc)) st
 	ejecutar_comando_modo_comando (Just (CMoveUn direc)) st 		= ejecutar_comando_move_una_dir (Just (CMoveUn direc)) st
 	ejecutar_comando_modo_comando (Just (CMoveCurren direc)) st = ejecutar_comando_move_current (Just (CMoveCurren direc)) st
+	ejecutar_comando_modo_comando (Just (CTransferUn direc)) st 		= ejecutar_comando_tra_una_dir (Just (CTransferUn direc)) st
+	ejecutar_comando_modo_comando (Just (CTransferCurren direc)) st = ejecutar_comando_tra_current (Just (CTransferCurren direc)) st
 
 	ejecutar_comando_modo_comando (Just (CWriteT direc1 direc2)) st 		= ejecutar_comando_write_con_dos_dir (Just (CWriteT direc1 direc2)) st
 	ejecutar_comando_modo_comando (Just (CPrintT direc1 direc2)) st 		= ejecutar_comando_print_con_dos_dir (Just (CPrintT direc1 direc2)) st
@@ -256,7 +273,8 @@ module Comandos where
  	ejecutar_comando_modo_comando (Just (CYankT direc1 direc2)) st  		= ejecutar_comando_yank_con_dos_dir (Just (CYankT direc1 direc2)) st
 	ejecutar_comando_modo_comando (Just (CJoinT direc1 direc2)) st  		= ejecutar_comando_join_con_dos_dir (Just (CJoinT direc1 direc2)) st
 	ejecutar_comando_modo_comando (Just (CMoveDos direc1 direc2)) st 		= ejecutar_comando_move_dos_dir (Just (CMoveDos direc1 direc2)) st
- 	
+	ejecutar_comando_modo_comando (Just (CTransferDos direc1 direc2)) st 		= ejecutar_comando_tra_dos_dir (Just (CTransferDos direc1 direc2)) st
+
  	ejecutar_comando_modo_comando (Just (CMoveT direc1 direc2 direc3)) st  			= ejecutar_comando_move_con_dos_dir (Just (CMoveT direc1 direc2 direc3)) st
  	ejecutar_comando_modo_comando (Just (CTransferT direc1 direc2 direc3)) st  	= ejecutar_comando_transfer_con_dos_dir (Just (CTransferT direc1 direc2 direc3)) st
  	ejecutar_comando_modo_comando (Just (CMove direc1 direc2)) st 							= ejecutar_comando_move_con_dir (Just (CMove direc1 direc2)) st
@@ -321,6 +339,9 @@ module Comandos where
 	ejecutar_comando_delete_current comando st = borrar_linea linea st
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
+
+	ejecutar_comando_tra_solo :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_tra_solo comando st = ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc Corriente []) (Direc Corriente []) (Direc Corriente []))) st
 
 	ejecutar_comando_change_current :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_change_current comando st = borrar_linea_change linea st
@@ -2019,6 +2040,10 @@ module Comandos where
 
 	-- *********************************************************************************************** --
 	ejecutar_comando_move_una_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_move_una_dir (Just (CTransferUn (Direc Todo []))) st = 
+		ejecutar_comando_move_con_dos_dir (Just (CTransferT (Direc (Abs 1) []) (Direc Ultima []) (Direc Corriente []))) st
+	ejecutar_comando_move_una_dir (Just (CTransferUn (Direc TdoRelativo []))) st = 
+		ejecutar_comando_move_con_dos_dir (Just (CTransferT (Direc Corriente []) (Direc Ultima []) (Direc Corriente []))) st
 	ejecutar_comando_move_una_dir (Just (CMoveUn direc)) st = 
 		ejecutar_comando_move_con_dos_dir (Just (CMoveT direc direc (Direc Corriente []))) st
 
@@ -2217,6 +2242,21 @@ module Comandos where
 
 
 	-- *********************************************************************************************** --
+	ejecutar_comando_tra_una_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_tra_una_dir (Just (CTransferUn (Direc Todo []))) st = 
+		ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc (Abs 1) []) (Direc Ultima []) (Direc Corriente []))) st
+	ejecutar_comando_tra_una_dir (Just (CTransferUn (Direc TdoRelativo []))) st = 
+		ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc Corriente []) (Direc Ultima []) (Direc Corriente []))) st
+	ejecutar_comando_tra_una_dir (Just (CTransferUn direc)) st = 
+		ejecutar_comando_transfer_con_dos_dir (Just (CTransferT direc direc (Direc Corriente []))) st
+
+	ejecutar_comando_tra_dos_dir :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_tra_dos_dir (Just (CTransferDos direc1 direc2)) st = 
+		ejecutar_comando_transfer_con_dos_dir (Just (CTransferT direc1 direc2 (Direc Corriente []))) st
+
+	ejecutar_comando_tra_current (Just (CTransferCurren direc)) st = 
+		ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc Corriente []) (Direc Corriente []) direc)) st
+
 	ejecutar_comando_transfer_con_dos_dir :: Maybe Comando -> State -> (String, State)
 	ejecutar_comando_transfer_con_dos_dir (Just (CTransferT (Direc Ultima off1) (Direc Ultima off2) dir3)) st = 
 		ejecutar_comando_transfer_automatico (maximo + offset1) (maximo + offset2) st dir3
