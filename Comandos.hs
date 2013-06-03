@@ -796,16 +796,24 @@ module Comandos where
 
 	-- *********************************************************************************************** --
 	ejecutar_comando_join_con_dir :: Maybe Comando -> State -> (String, State)
-	ejecutar_comando_join_con_dir (Just (CJoin (Direc Ultima off))) st = ("", st)
+	ejecutar_comando_join_con_dir (Just (CJoin (Direc Ultima off))) st = ("", (linea, buf, modo, True, 'j', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 	ejecutar_comando_join_con_dir (Just (CJoin (Direc Corriente off))) st = ("?\n", st)
-	ejecutar_comando_join_con_dir (Just (CJoin (Direc (Abs a) off))) st = ("", st)
-	ejecutar_comando_join_con_dir (Just (CJoin (Direc (Rel a) off))) st = ("", st)
+	ejecutar_comando_join_con_dir (Just (CJoin (Direc (Abs a) off))) st = ("", (linea, buf, modo, True, 'j', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
+	ejecutar_comando_join_con_dir (Just (CJoin (Direc (Rel a) off))) st = ("", (linea, buf, modo, True, 'j', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
+		where 
+			(linea, buf, modo, _, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 	ejecutar_comando_join_con_dir (Just (CJoin (Direc Todo off))) st = 
 		ejecutar_comando_join_automatico 1 maximo st
-				where 
-					(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
-					maximo = length buf
-	ejecutar_comando_join_con_dir (Just (CJoin (Direc TdoRelativo off))) st = ("", st)
+			where 
+				(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
+				maximo = length buf
+	ejecutar_comando_join_con_dir (Just (CJoin (Direc TdoRelativo off))) st = ("", (linea, buf, modo, True, 'j', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
+		where 
+			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 
 	-- *********************************************************************************************** --
 	ejecutar_comando_change_con_dir :: Maybe Comando -> State -> (String, State)
