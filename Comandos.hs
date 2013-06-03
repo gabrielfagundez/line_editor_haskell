@@ -354,6 +354,7 @@ module Comandos where
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
 
 	ejecutar_comando_paste_current :: Maybe Comando -> State -> (String, State)
+	ejecutar_comando_paste_current comando (linea, buf, modo, esta_modificado, ult_com, nom_arch, [], aux, buffer_insert, auxiliar1, auxiliar2) = ("?\n", (linea, buf, modo, esta_modificado, ult_com, nom_arch, [], aux, buffer_insert, auxiliar1, auxiliar2))
 	ejecutar_comando_paste_current comando st = ("", (linea + length papelera, paste papelera linea buf, modo, True, 'x', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
 		where 
 			(linea, buf, modo, _, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
@@ -865,7 +866,7 @@ module Comandos where
 	borrar_linea_change a st 
 		| a < 0 				= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
 		| a > maximo 		= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
-		| a == 0			 	= ("", (1, borrar_linea_change_buf a buf, ModoInsertar, True, 'c', nom_arch, obtener_lineas_papelera a a buf, aux, buffer_insert, auxiliar1, auxiliar2))
+		| a == 0			 	= ("", (1, borrar_linea_change_buf 1 buf, ModoInsertar, True, 'c', nom_arch, obtener_lineas_papelera 1 1 buf, aux, buffer_insert, auxiliar1, auxiliar2))
 		| otherwise			= ("", (a, borrar_linea_change_buf a buf, ModoInsertar, True, 'c', nom_arch, obtener_lineas_papelera a a buf, aux, buffer_insert, auxiliar1, auxiliar2))
 		where  	
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st
@@ -967,6 +968,7 @@ module Comandos where
 
 
 	ejecutar_comando_paste_automatico :: Int -> State -> (String, State)
+	ejecutar_comando_paste_automatico indice (linea, buf, modo, esta_modificado, ult_com, nom_arch, [], aux, buffer_insert, auxiliar1, auxiliar2) = ("?\n", (linea, buf, modo, esta_modificado, ult_com, nom_arch, [], aux, buffer_insert, auxiliar1, auxiliar2))
 	ejecutar_comando_paste_automatico indice st 
 		| indice > maximo 								= ("?\n", (linea, buf, modo, esta_modificado, 'x', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
 		| indice < 0 											= ("?\n", (linea, buf, modo, esta_modificado, 'x', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))
@@ -1746,12 +1748,13 @@ module Comandos where
 
 	ejecutar_comando_change_automatico :: Int -> Int -> State -> (String, State)
 	ejecutar_comando_change_automatico indice1 indice2 st
-		| indice1 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))	
-		| indice2 > maximo				= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))	
-		| indice1 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))	
-		|	indice2 <= 0						= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))	
-		| indice1 > indice2 			= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))	
-		| indice2 /= maximo 			= ("", ((maximo - (indice2 - indice1)) - 1, borrar_lineas indice1 indice2 buf, ModoInsertar, True, 'c', nom_arch, obtener_lineas_papelera indice1 indice2 buf, aux, buffer_insert, auxiliar1, auxiliar2))
+		| indice1 > maximo						= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))	
+		| indice2 > maximo						= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))	
+		| indice1 < 0							= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))	
+		| indice2 < 0							= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))	
+		| indice1 > indice2 					= ("?\n", (linea, buf, modo, esta_modificado, 'c', nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2))	
+		| indice1 == 0 && indice2 == 0			= ("", (indice1, borrar_lineas 1 1 buf, ModoInsertar, True, 'c', nom_arch, obtener_lineas_papelera 1 1 buf, aux, buffer_insert, auxiliar1, auxiliar2))
+		| indice1 == 0							= ("", (1, borrar_lineas 1 indice2 buf, ModoInsertar, True, 'c', nom_arch, obtener_lineas_papelera 1 indice2 buf, aux, buffer_insert, auxiliar1, auxiliar2))
 		| otherwise 							= ("", (indice1, borrar_lineas indice1 indice2 buf, ModoInsertar, True, 'c', nom_arch, obtener_lineas_papelera indice1 indice2 buf, aux, buffer_insert, auxiliar1, auxiliar2))
 		where 
 			(linea, buf, modo, esta_modificado, _, nom_arch, papelera, aux, buffer_insert, auxiliar1, auxiliar2) = st

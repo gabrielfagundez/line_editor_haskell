@@ -1,3 +1,5 @@
+-- 3468364 4616122
+
 module Main(main) where
 
 	import System.IO
@@ -153,9 +155,11 @@ module Main(main) where
 
 
 	segundo_argumento :: Char -> State -> String
+	segundo_argumento 'n' (_, _, ModoInsertar, _, _, _, _, _, _, _, _) 	= ""
 	segundo_argumento 'n' nuevo_estado 	= (show $ linea) ++ "\t" ++ (obtener_linea linea buf)
 		where 
 			(linea, buf, _, _, _, _, _, _, _, _, _) = nuevo_estado
+	segundo_argumento 'p' (_, _, ModoInsertar, _, _, _, _, _, _, _, _) 	= ""
 	segundo_argumento 'p' nuevo_estado	= (obtener_linea linea buf)
 		where 
 			(linea, buf, _, _, _, _, _, _, _, _, _) = nuevo_estado
